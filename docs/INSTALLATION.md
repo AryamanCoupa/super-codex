@@ -4,7 +4,7 @@ Install a published release directly with pipx, then run `sc` from any project. 
 
 Packages are distributed through [AryamanCoupa/super-codex Releases](https://github.com/AryamanCoupa/super-codex/releases). Use a version with completed release assets. The package is not published to PyPI; do not use `pipx install super-codex-harness` yet. Maintainers can follow [the release guide](RELEASING.md) to publish new versions.
 
-This checkout contains the **unpublished 0.5.4 development build**. Its default native Codex interface loads the operator skill and a catalog of bundled skills for use on demand. Test it with `pipx install --force .` from this checkout, or `pipx install --force /absolute/path/to/a/built.whl`. The published examples below intentionally select 0.5.0; do not use a 0.5.4 download URL until its assets exist. Version 0.5.0 starts the managed controller by default and has neither the later `answer` command nor the `--managed` selector.
+This checkout contains the **unreleased 0.5.4 development build** on `main`. Its default native Codex interface loads the operator skill and a catalog of bundled skills for use on demand. Test it with `pipx install --force .` from this checkout, or `pipx install --force /absolute/path/to/a/built.whl`. The published examples below intentionally select 0.5.0; do not use a 0.5.4 download URL until its assets exist. Version 0.5.0 starts the managed controller by default and has neither the later `answer` command nor the `--managed` selector.
 
 ## Prerequisites
 
@@ -52,16 +52,16 @@ sc
 supercodex "Fix the pagination bug and verify the edge cases"
 ```
 
-In the local 0.5.4 build, `sc` opens the real Codex terminal with its normal layout, streaming and authentication. A private bootstrap supplies the operator skill, selected pack/policy defaults and names, descriptions and paths for the bundled skills. Codex reads the relevant skill files when needed. Research uses its existing web and MCP tools directly; coding can edit and run meaningful checks in the native session. Ordinary requests do not call `answer` or start another model process automatically.
+In the 0.5.4 development build, `sc` opens the real Codex terminal with its normal layout, streaming and authentication. A private bootstrap supplies the operator skill, selected pack/policy defaults and names, descriptions and paths for the bundled skills. The `skill-discovery` instructions tell Codex to check the native session catalog and bundled skills for each new task, read the relevant files and apply them. Research uses its existing web and MCP tools directly; coding can edit and run meaningful checks in the native session. Ordinary requests do not call `answer` or start another model process automatically.
 
-Use `sc skills` to list the bundled guidance, `sc skills github-context` to read one skill, or `sc skills --json` for catalog metadata. These inspection commands make no model calls.
+Use `sc skills` to list the twelve bundled task skills, `sc skills --search "GitHub repositories"` to search their names/descriptions, `sc skills github-context` to read one skill, or `sc skills --json` for catalog metadata. Search also accepts `--json`. These inspection commands make no model calls. The search covers bundled metadata only, so no match does not mean a relevant native or project skill is unavailable. See [skill selection and coverage](AGENT_USAGE.md#bundled-skill-coverage).
 
 ```bash
 # Default native work:
 sc "Research current AI news with sources"
 sc "Find repositories matching my query"
 
-# Optional managed workflows in the local 0.5.4 build:
+# Optional managed workflows in the 0.5.4 development build:
 sc answer "Research this question"
 sc answer --prompt-file /path/to/message.txt --context-file /path/to/relevant-context.txt
 sc answer "Fix the pagination bug and verify its contract" --pack backend

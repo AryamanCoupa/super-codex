@@ -1,11 +1,13 @@
 ---
 name: super-codex
-description: Use focused SuperCodex skills for native research, coding and verification; select optional task packs, managed runs or experiments when they help the request.
+description: Discover and use relevant available skills for native research, coding and verification; select optional task packs, managed runs or experiments when they help the request.
 ---
 
 Work in the current Codex session with its existing tools, authentication, context and permissions. Choose the relevant skills below and complete the user's request directly. Research can use connected MCP tools or browsing; coding can use native editing and meaningful checks. An `answer` command, another model process, a clean Git commit or a managed receipt is not a prerequisite for ordinary work. Do not route every message through a child CLI or wait for a wrapper before using an available tool.
 
-Read the smallest relevant set of skill files when needed. The catalog gives the exact installed paths; do not assume the current working directory contains the package. Read any selected task pack's instructions as well. A skill provides a procedure, not credentials or permission to perform unrelated actions.
+Use `skill-discovery` for each materially new task to choose the smallest useful set from both the native session's available skills and the bundled catalog below. Honor explicitly named skills. Read the selected instructions at their advertised paths or resources, reuse unchanged instructions already read, and briefly announce the skill names being applied. Do not repeat discovery for every follow-up or read every skill. The catalog gives exact installed paths; do not assume the current working directory contains the package. Read any selected task pack's instructions as well. A skill provides a procedure, not credentials or permission to perform unrelated actions.
+
+If the descriptions do not make the choice clear, use the absolute launcher shown below with `skills --search "short task keywords"`, then inspect promising matches. This searches only bundled names and descriptions by keyword; it does not search third-party skills or guarantee suitability. A no-match result does not prevent ordinary native work. Follow `skill-discovery` for other advertised catalogs without installing or downloading anything automatically.
 
 {{SUPER_CODEX_SKILLS}}
 
@@ -20,13 +22,14 @@ The CLI remains available when the user asks for its workflow or the task benefi
 ```bash
 {{SUPER_CODEX_COMMAND}} commands
 {{SUPER_CODEX_COMMAND}} skills
+{{SUPER_CODEX_COMMAND}} skills --search "github repositories"
 {{SUPER_CODEX_COMMAND}} skills github-context
 {{SUPER_CODEX_COMMAND}} commands run
 {{SUPER_CODEX_COMMAND}} commands pack
 {{SUPER_CODEX_COMMAND}} experimental list
 ```
 
-`skills` lists the bundled catalog and `skills NAME` reads one complete skill without a model call. Load individual command help rather than the complete JSON command catalog unless automation needs it. Discovery is not evidence that the user's task was completed. Preserve the bootstrap's repository, policy, pack, tool and output defaults when selecting a CLI workflow; do not silently change budgets.
+`skills` lists the bundled catalog, `skills --search "keywords"` filters its names and descriptions, and `skills NAME` reads one complete skill without a model call. Load individual command help rather than the complete JSON command catalog unless automation needs it. Finding a skill is different from reading and applying its instructions; none of those alone completes the user's task. Preserve the bootstrap's repository, policy, pack, tool and output defaults when selecting a CLI workflow; do not silently change budgets.
 
 `answer "PROMPT"` is an optional noninteractive managed request. `start --managed --no-stream --task TASK_FILE --repo REPO --config WORKER_POLICY` uses an explicit coding contract and the existing exec authentication path. `run` returns a patch for review; the managed controller can apply a passing patch after source/base checks. Use these only when selected for the task, not as a mandatory prelude to research or native editing. Their source-state, authentication and budget requirements still apply. Do not discard or commit unrelated changes to satisfy them. If the user explicitly requested enforced execution, a blocked run must be reported rather than silently relabeled as a native success.
 

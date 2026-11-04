@@ -85,6 +85,33 @@ def skill_catalog_text(rows=None):
     return "\n".join(f"- {row['name']}: {row['description']}\n  Read: {json.dumps(row['path'])}" for row in rows)
 
 
+_SKILL_QUERY_FILLER = frozenset(
+    "a an and are as at be by can could do for from get give help how i in is it me my of on or "
+    "please should some that the their them there these they this to use using want what when where "
+    "which who will with would you your find search skill skills task tasks".split()
+)
+
+
+def _skill_terms(text):
+    terms = re.findall(r"[a-z0-9]+", text.casefold())
+    # Treat common plurals alike without a dependency or a model call.
+    return {term[:-1] if len(term) > 3 and term.endswith("s") and not term.endswith("ss") else term
+            for term in terms if term not in _SKILL_QUERY_FILLER}
+
+
+def search_skills(query, rows=None):
+    """Rank bundled names/descriptions by keyword overlap, not semantic suitability."""
+    terms = _skill_terms(query)
+    if not terms:
+        raise ValueError("Skill search requires task keywords, such as GitHub repositories or AI news")
+    ranked = []
+    for row in bundled_skills() if rows is None else rows:
+        score = 4 * len(terms & _skill_terms(row["name"])) + len(terms & _skill_terms(row["description"]))
+        if score:
+            ranked.append((score, row))
+    return [row for _, row in sorted(ranked, key=lambda item: (-item[0], item[1]["name"]))]
+
+
 def skill_text():
     template = (ASSETS / "operator" / "super-codex" / "SKILL.md").read_text()
     return (template.replace("{{SUPER_CODEX_COMMAND}}", shlex.join(invocation()))
@@ -121,8 +148,9 @@ def install_skill(destination, *, update=False):
 
 
 def register_parser(subparsers):
-    skills = subparsers.add_parser("skills", help="List bundled skills, or read one by name; no model calls")
+    skills = subparsers.add_parser("skills", help="List, search or read bundled skills; no model calls")
     skills.add_argument("name", nargs="?", help="Optional bundled skill name to read")
+    skills.add_argument("--search", metavar="QUERY", help="Rank bundled skill names/descriptions by task keywords")
     skills.add_argument("--json", action="store_true", help="Print skill metadata as JSON")
     parser = subparsers.add_parser("agent", help="Teach a top-level Codex agent how to operate SuperCodex")
     actions = parser.add_subparsers(dest="agent_action", required=True)
@@ -137,14 +165,23 @@ def register_parser(subparsers):
 def handle(args):
     if args.action == "skills":
         rows = bundled_skills()
+        if args.search is not None:
+            if args.name:
+                raise ValueError("Choose a skill name or --search, not both")
+            rows = search_skills(args.search, rows)
         if args.name:
             rows = [row for row in rows if row["name"] == args.name]
             if not rows:
                 raise ValueError("Unknown bundled skill; run skills to list available names")
         if args.json:
-            print(json.dumps({"skills": rows}, indent=2))
+            result = {"skills": rows}
+            if args.search is not None:
+                result["query"] = args.search
+            print(json.dumps(result, indent=2))
         elif args.name:
             print(Path(rows[0]["path"]).read_text(encoding="utf-8"))
+        elif args.search is not None and not rows:
+            print("No matching bundled skills. Try different task keywords or inspect the current session's skill catalog.")
         else:
             print(skill_catalog_text(rows))
         return 0

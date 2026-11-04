@@ -99,7 +99,9 @@ Only explicitly selected servers are supplied by SuperCodex to each phase. A ser
 
 ## Skills
 
-Eleven bundled skills cover research, planning, debugging, verification, economical delegation, browser work, GitHub/Atlassian context, evaluation, experiment selection and learning-data curation. Inspect them with `sc skills` or read one with `sc skills github-context`. Native `sc` supplies the full catalog and loads relevant files on demand; packs select the skills they include in their own instructions. For ordinary Codex sessions launched without `sc`, install the operator skill with `sc agent install --user` to expose the same catalog. See [skill coverage and installation](AGENT_USAGE.md). Installing skills does not install or authorize the services they describe.
+Twelve bundled task skills cover skill discovery, research, planning, debugging, verification, economical delegation, browser work, GitHub/Atlassian context, evaluation, experiment selection and learning-data curation. Inspect them with `sc skills`, search bundled names/descriptions with `sc skills --search "GitHub repositories"`, or read one with `sc skills github-context`. Search also supports `--json` and makes no model calls. It is a keyword shortlist, not a search of third-party skills or a guarantee that the first result fits the task.
+
+Native `sc` supplies the full catalog. The `skill-discovery` workflow directs the operator to check both that catalog and skills already available in the native session for each new task, read the relevant instructions and apply them with existing tools. An empty bundled search does not rule out a useful installed or project skill. Discovery does not download or install additional skills. Packs select the skills they include in their own instructions. For ordinary Codex sessions launched without `sc`, install the operator skill with `sc agent install --user` to expose the same catalog. See [skill coverage and installation](AGENT_USAGE.md). Installing skills does not install or authorize the services they describe.
 
 ## Open models
 

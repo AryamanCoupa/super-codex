@@ -22,6 +22,7 @@ class SkillCatalogTests(unittest.TestCase):
         self.assertEqual(len(rows), len(expected))
         names = [row["name"] for row in rows]
         self.assertEqual(len(names), len(set(names)))
+        self.assertIn("skill-discovery", names)
         for row in rows:
             with self.subTest(name=row["name"]):
                 path = Path(row["path"])
@@ -79,6 +80,85 @@ class SkillCatalogTests(unittest.TestCase):
             self.assertEqual(missing.returncode, 2)
             self.assertIn("Unknown bundled skill", missing.stderr)
             self.assertEqual(list(Path(directory).iterdir()), [])
+
+
+class SkillSearchTests(unittest.TestCase):
+    def setUp(self):
+        self.temporary = tempfile.TemporaryDirectory(prefix="supercodex skill search ")
+        self.addCleanup(self.temporary.cleanup)
+        self.directory = Path(self.temporary.name)
+        self.launcher = Path(__file__).resolve().parents[1] / "codex_harness/launch.py"
+        # Discovery must work in a managed worker without a Codex installation,
+        # credentials directory, or project files in the current directory.
+        self.environment = {**os.environ, "SUPERCODEX_WORKER": "1", "PATH": "",
+                            "CODEX_HOME": str(self.directory / "absent-codex-home")}
+        self.catalog = {row["name"]: row for row in bundled_skills()}
+
+    def invoke(self, *args):
+        result = subprocess.run([sys.executable, str(self.launcher), *args],
+                                cwd=self.directory, env=self.environment,
+                                text=True, capture_output=True, timeout=10)
+        self.assertEqual(list(self.directory.iterdir()), [], "Read-only skill discovery created files")
+        return result
+
+    def test_task_queries_rank_relevant_skills_and_preserve_catalog_metadata(self):
+        cases = {
+            "find GitHub repositories": "github-context",
+            "latest AI news": "research-with-sources",
+            "debug a failing test": "debug-with-evidence",
+        }
+        for query, expected in cases.items():
+            with self.subTest(query=query):
+                result = self.invoke("skills", "--search", query, "--json")
+                self.assertEqual(result.returncode, 0, result.stderr)
+                payload = json.loads(result.stdout)
+                self.assertEqual(payload["query"], query)
+                self.assertTrue(payload["skills"])
+                self.assertEqual(payload["skills"][0]["name"], expected)
+                for row in payload["skills"]:
+                    self.assertEqual(row, self.catalog[row["name"]])
+                repeated = self.invoke("skills", "--search", query.upper(), "--json")
+                self.assertEqual(repeated.returncode, 0, repeated.stderr)
+                self.assertEqual(json.loads(repeated.stdout)["skills"], payload["skills"])
+
+    def test_unknown_topic_reports_no_match_without_inventing_a_skill(self):
+        result = self.invoke("skills", "--search", "zyzzyvaquantum", "--json")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual(json.loads(result.stdout), {"skills": [], "query": "zyzzyvaquantum"})
+        human = self.invoke("skills", "--search", "zyzzyvaquantum")
+        self.assertEqual(human.returncode, 0, human.stderr)
+        self.assertRegex(human.stdout.lower(), r"\bno\b.*\bmatch(?:es|ing|ed)?\b")
+
+    def test_empty_or_filler_only_queries_and_name_search_combination_are_rejected(self):
+        for query in ("", " \t\n ", "can you please help me"):
+            with self.subTest(query=query):
+                result = self.invoke("skills", "--search", query, "--json")
+                self.assertEqual(result.returncode, 2)
+                self.assertTrue(result.stderr.strip())
+        combined = self.invoke("skills", "github-context", "--search", "github")
+        self.assertEqual(combined.returncode, 2)
+        self.assertTrue(combined.stderr.strip())
+
+    def test_search_treats_shell_characters_as_data_and_returns_readable_paths(self):
+        query = 'github "$(touch unwanted)"; `touch unwanted-too`'
+        result = self.invoke("skills", "--search", query, "--json")
+        self.assertEqual(result.returncode, 0, result.stderr)
+        payload = json.loads(result.stdout)
+        self.assertEqual(payload["query"], query)
+        self.assertIn(self.catalog["github-context"], payload["skills"])
+        for row in payload["skills"]:
+            self.assertTrue(Path(row["path"]).is_file())
+
+    def test_search_is_discoverable_and_skill_discovery_itself_can_be_read(self):
+        help_result = self.invoke("skills", "--help")
+        self.assertEqual(help_result.returncode, 0, help_result.stderr)
+        self.assertIn("--search", help_result.stdout)
+        inventory = self.invoke("commands", "skills", "--json")
+        self.assertEqual(inventory.returncode, 0, inventory.stderr)
+        self.assertIn("--search", inventory.stdout)
+        content = self.invoke("skills", "skill-discovery")
+        self.assertEqual(content.returncode, 0, content.stderr)
+        self.assertEqual(content.stdout.rstrip(), Path(self.catalog["skill-discovery"]["path"]).read_text().rstrip())
 
 
 if __name__ == "__main__":

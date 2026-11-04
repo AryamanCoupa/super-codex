@@ -101,7 +101,9 @@ def prepare(args):
         + f"Optional worker policy: {json.dumps(str(policy_file))}\n"
         + f"Selected pack: {json.dumps(str(pack) if pack else None)}\n"
         + f"Selected additional MCP servers: {json.dumps(sorted(mcp))}\n"
-        + "Choose and read only the skills relevant to the actual task, then execute that task. "
+        + "For each new task, apply skill-discovery: check the current session and bundled skill catalogs, "
+        "use keyword search when selection is unclear, and read only the relevant skill instructions. "
+        "Reuse unchanged instructions already read, announce which skills you are applying, then execute the task. "
         "A skill catalog or startup acknowledgment is not the requested result. For repository discovery, "
         "use the connected GitHub tools directly; initialize/discover operations when required and follow "
         "pagination. For current news, retrieve fresh sources and cite them. For coding, inspect the target, "
@@ -140,7 +142,8 @@ def prepare(args):
     # The file exists before launch and its directory is explicitly writable/readable to Codex.
     initial_prompt = (
         "Load the SuperCodex skill catalog and session defaults from "
-        f"{json.dumps(str(folder / 'bootstrap.txt'))}. Choose and read the relevant skills, then use "
+        f"{json.dumps(str(folder / 'bootstrap.txt'))}. For each task, start with skill-discovery, "
+        "choose and read the relevant skills, then use "
         "the current Codex tools to carry out the user's task in this session. Respect existing higher-priority instructions. If no task was "
         "provided, briefly confirm readiness and wait."
     )

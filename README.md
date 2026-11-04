@@ -4,18 +4,18 @@
 
 SuperCodex wraps the Codex CLI in a local engineering and evaluation harness. Give it a task, a repository, and executable acceptance checks. It produces a verified patch, a complete run record, and evidence for improving your next run.
 
-Run **`sc`** or **`supercodex`** to open native Codex with SuperCodex's operator skill, a catalog of bundled skills and any selected task pack. Codex chooses the relevant guidance and works directly with its normal web, MCP, editing and testing tools. Its layout, streaming, authentication and permissions stay native.
+Run **`sc`** or **`supercodex`** to open native Codex with SuperCodex's operator skill, a catalog of bundled skills and any selected task pack. The `skill-discovery` workflow tells Codex to check the skills available in the session and bundled catalog for each new task, read the relevant instructions, then work directly with its normal web, MCP, editing and testing tools. Its layout, streaming, authentication and permissions stay native.
 
 The default is skill-driven: research does not spawn a second Codex process, and there is no forced per-message `answer` command or routing hook. Coding skills emphasize scoped changes, meaningful checks and honest results. Use **`sc --managed`**, `answer` or `run` explicitly when you want isolated execution, accounting and receipts.
 
-This describes the local **unpublished 0.5.4 development build**. The release links below still install 0.5.0, whose default is the managed controller. Install this checkout with `pipx install --force .` to test 0.5.4, then restart `sc`. Skill instructions guide the model; they do not guarantee accuracy or replace execution evidence.
+This describes the **unreleased 0.5.4 development build** on `main`. The release links below still install 0.5.0, whose default is the managed controller. Install this checkout with `pipx install --force .` to test 0.5.4, then restart `sc`. Skill instructions guide the model; they do not guarantee accuracy or replace execution evidence.
 
 Independent community project. Not affiliated with or endorsed by OpenAI. “Super” describes the goal; improved accuracy and lower cost must be demonstrated on your tasks.
 
 ## What you get
 
 - **Four strategies:** economy, selective escalation, strong planner + small implementer, and independent review for accuracy.
-- **Skills in native Codex:** `sc` provides relevant guidance for research, GitHub/Atlassian context, browser work, planning, debugging, verification and economical delegation, plus evaluation and learning workflows. The operator reads skill files on demand.
+- **Skills in native Codex:** `sc` provides skill discovery, research, GitHub/Atlassian context, browser work, planning, debugging, verification and economical delegation, plus evaluation and learning workflows. The operator selects a small relevant set and reads skill files on demand.
 - **Enforced execution when selected:** `sc --managed` owns preparation, verification and receipts. Its live transport displays public response text and tool activity; `--managed --no-stream` selects buffered exec for compatibility.
 - **Disposable Git clones:** workers edit isolated copies; candidates are checked in another clean clone before any accepted patch is applied.
 - **Evidence-driven repairs:** bounded retries with failing checks, compact handoffs, and stall detection.
@@ -73,6 +73,7 @@ sc --managed --task /path/to/task.json --patch-only
 sc --managed --research-mcp github "Find repositories matching my query"
 sc --dry-run                       # preview only, no model call or files
 sc skills                          # bundled skill names, descriptions and paths
+sc skills --search "GitHub repositories" # find bundled guidance by task keywords
 sc skills github-context           # read one skill without a model call
 sc commands                        # all harness commands remain available
 sc experimental list
@@ -80,7 +81,7 @@ sc --native                        # explicit alias for the default Codex interf
 sc --managed --no-stream            # enforced controller, buffered compatibility transport
 ```
 
-The native operator inherits Codex configuration and receives names, descriptions and absolute paths for all bundled skills. It reads the relevant files and completes the task with native tools; ordinary questions and coding requests do not need a child model or harness receipt. Explicit managed runs retain their own budgets and evidence, separate from native operator inference. No SuperCodex hook is registered, and `--no-prompt-hook` is a deprecated compatibility no-op. See [skills, optional workflows and evidence](docs/AGENT_USAGE.md#run-with-sc).
+The native operator inherits Codex configuration and receives names, descriptions and absolute paths for all bundled skills. `skill-discovery` guides selection from that catalog and the skills already available in the session. `sc skills --search "task keywords"` searches bundled names and descriptions only; it makes no model call and does not search or install third-party skills. The operator reads the selected files and completes the task with native tools; ordinary questions and coding requests do not need a child model or harness receipt. Explicit managed runs retain their own budgets and evidence, separate from native operator inference. No SuperCodex hook is registered, and `--no-prompt-hook` is a deprecated compatibility no-op. See [skills, optional workflows and evidence](docs/AGENT_USAGE.md#run-with-sc).
 
 For compatibility, `--task`, `--patch-only` and `--no-stream` also select managed mode. They conflict with explicit `--native`; research-specific flags require managed mode. Use `sc --managed "TASK"` for noninteractive execution.
 
@@ -188,7 +189,7 @@ super-codex run task.json --repo /path/to/repo --pack .harness/packs/my-api
 
 `list` also discovers packs under `.harness/packs` and active registries under `.harness/registries`. Use `--root ./other-packs` for another location, or `--json` for structured output. `suggest` explains task/repository matches without a model call; `--from-runs .harness/runs` can flag recurring failures for an experiment. Rankings are heuristics, and you choose the pack explicitly.
 
-Bundled packs: `backend`, `frontend`, and `issue-to-patch`. `create` copies skills and tools but requires real checks from your task; unspecified checks remain incomplete. `pack fork` is still available for an exact editable copy. Edit `instructions.md` for recurring constraints and `pack.toml` for checks, policy and matching hints. A pack includes skills explicitly listed in its manifest; add your own under `skills/<name>/SKILL.md`. Separately, native `sc` exposes the full catalog of eleven bundled skills for on-demand selection. See the [skill coverage table](docs/AGENT_USAGE.md#bundled-skill-coverage).
+Bundled packs: `backend`, `frontend`, and `issue-to-patch`. `create` copies skills and tools but requires real checks from your task; unspecified checks remain incomplete. `pack fork` is still available for an exact editable copy. Edit `instructions.md` for recurring constraints and `pack.toml` for checks, policy and matching hints. A pack includes skills explicitly listed in its manifest; add your own under `skills/<name>/SKILL.md`. Separately, native `sc` exposes the full catalog of twelve bundled skills for on-demand selection. See the [skill coverage table](docs/AGENT_USAGE.md#bundled-skill-coverage).
 
 For controlled self-improvement, use a development run produced by that exact pack and a separate holdout suite:
 

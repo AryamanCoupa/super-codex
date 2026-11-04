@@ -1,6 +1,6 @@
 # Use SuperCodex skills from any project
 
-In the unpublished **0.5.4 development build**, `sc` / `supercodex` opens native Codex with SuperCodex's operator skill, a catalog of bundled skills and any selected task pack. Codex reads the relevant skill files when needed and works directly with its existing tools. Research can use native web and MCP connections; coding can inspect, edit and run checks in the native session. There is no per-message routing hook, app-server hook preflight, or requirement to launch a child model for ordinary requests.
+In the unreleased **0.5.4 development build** on `main`, `sc` / `supercodex` opens native Codex with SuperCodex's operator skill, a catalog of bundled skills and any selected task pack. The `skill-discovery` workflow guides Codex to select and read relevant skill files, then work directly with its existing tools. Research can use native web and MCP connections; coding can inspect, edit and run checks in the native session. There is no per-message routing hook, app-server hook preflight, or requirement to launch a child model for ordinary requests.
 
 Skills guide behavior rather than enforcing it. They call for scoped work, current sources, meaningful verification and honest reporting. Explicit `answer`, `--managed`, `run`, evaluation and pack commands remain available when their additional orchestration is useful. Published 0.5.0 starts the managed controller by default and does not have the later mode selectors; install the local checkout to try 0.5.4.
 
@@ -20,7 +20,7 @@ sc --dry-run
 
 `supercodex`, `super-codex` and `ch` accept the same arguments. No subcommand means `start`. Quote a multiword initial request; if the whole request is an existing command name, use explicit `sc start "run"`. `sc --help` shows command groups, `sc start --help` shows launch options, and `sc --version` reports the installed version.
 
-With no task, Codex reads the private bootstrap and waits for your request. The bootstrap contains the operator guidance, names/descriptions/absolute paths for the bundled skills, selected pack context and optional CLI templates. It instructs Codex to choose the smallest relevant skill set, read those files and complete the task using available native tools. Loading a skill or listing commands is preparation, not task completion.
+With no task, Codex reads the private bootstrap and waits for your request. The bootstrap contains the operator guidance, names/descriptions/absolute paths for the bundled skills, selected pack context and optional CLI templates. It instructs Codex to apply `skill-discovery` for each new task: check the skills already available in the session and the bundled catalog, choose the smallest relevant set, read those files and complete the task using available native tools. Already-read unchanged instructions can be reused; a materially different task calls for a new selection. The operator should name the skills it actually applies. Loading a skill or listing commands is preparation, not task completion.
 
 For research, discover the actual connected tools, use their supported search/read operations, handle pagination and access limits, and cite the retrieved sources. A repository lookup or news question does not need a clean Git checkout or a child Codex process. For coding, preserve unrelated edits, reproduce the issue when practical, make a scoped change, inspect its diff and run meaningful checks. Report exactly what was tested and any remaining uncertainty. A native test result is not a managed-run receipt.
 
@@ -30,14 +30,18 @@ The catalog is available from the operator skill even without a selected pack. S
 
 ```bash
 sc skills
+sc skills --search "GitHub repositories"
+sc skills --search "latest AI news" --json
 sc skills github-context
+sc skills skill-discovery
 sc skills --json
 ```
 
-The list includes each skill's name, description and installed path; a name selects its full instructions.
+The list includes each skill's name, description and installed path; a name selects its full instructions. `--search` matches task keywords against bundled skill names and descriptions and returns a shortlist with those same paths. It does not search third-party or project skills, inspect all instruction bodies, install anything or invoke a model. Keyword matches are candidates to review, not a semantic guarantee. An empty result means no bundled keyword match; a relevant skill may still be available in the native session catalog. Use a few concrete keywords, read the shortlisted instructions, then perform the actual task.
 
 | Skill | Use it for |
 |---|---|
+| `skill-discovery` | Selecting and reading relevant native or bundled skills for the current task |
 | `research-with-sources` | Current research, source quality, dates, citations and uncertainty |
 | `github-context` | Repository discovery, code/issue/PR evidence, pagination and access limits |
 | `atlassian-context` | Issue and documentation context through available Atlassian tools |
