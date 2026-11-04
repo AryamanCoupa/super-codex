@@ -1,0 +1,114 @@
+.github/workflows/ci.yml
+  h_d644259067950f 1-19
+.gitignore
+  h_d644259067950f 1-12
+CONTRIBUTING.md
+  h_d644259067950f 1-15
+LICENSE
+  h_d644259067950f 1-21
+README.md
+  h_d644259067950f 1-154
+SECURITY.md
+  h_d644259067950f 1-14
+codex_harness/__init__.py
+  h_d644259067950f 1-3
+codex_harness/__main__.py
+  h_d644259067950f 1-3
+codex_harness/advisors.py
+  h_d644259067950f 1-83
+codex_harness/assets/fake_codex.py
+  h_d644259067950f 1-22
+codex_harness/assets/mcp/atlassian.toml
+  h_d644259067950f 1-5
+codex_harness/assets/mcp/custom.example.toml
+  h_d644259067950f 1-9
+codex_harness/assets/mcp/github.toml
+  h_d644259067950f 1-6
+codex_harness/assets/mcp/openai-docs.toml
+  h_d644259067950f 1-3
+codex_harness/assets/mcp/playwright.toml
+  h_d644259067950f 1-6
+codex_harness/assets/packs/backend/instructions.md
+  h_d644259067950f 1
+codex_harness/assets/packs/backend/pack.toml
+  h_d644259067950f 1-8
+codex_harness/assets/packs/frontend/instructions.md
+  h_d644259067950f 1
+codex_harness/assets/packs/frontend/mcp.toml
+  h_d644259067950f 1-5
+codex_harness/assets/packs/frontend/pack.toml
+  h_d644259067950f 1-6
+codex_harness/assets/packs/issue-to-patch/instructions.md
+  h_d644259067950f 1
+codex_harness/assets/packs/issue-to-patch/pack.toml
+  h_d644259067950f 1-5
+codex_harness/assets/policies/accuracy.toml
+  h_d644259067950f 1-10
+codex_harness/assets/policies/architect.toml
+  h_d644259067950f 1-6
+codex_harness/assets/policies/balanced.toml
+  h_d644259067950f 1-5
+codex_harness/assets/policies/economy.toml
+  h_d644259067950f 1-4
+codex_harness/assets/policies/open-model.example.toml
+  h_d644259067950f 1-5
+codex_harness/assets/policy.toml
+  h_d644259067950f 1-19
+codex_harness/assets/review.schema.json
+  h_d644259067950f 1-9
+codex_harness/assets/skills/atlassian-context/SKILL.md
+  h_d644259067950f 1-6
+codex_harness/assets/skills/browser-verify/SKILL.md
+  h_d644259067950f 1-8
+codex_harness/assets/skills/debug-with-evidence/SKILL.md
+  h_d644259067950f 1-8
+codex_harness/assets/skills/evaluate-harness/SKILL.md
+  h_d644259067950f 1-8
+codex_harness/assets/skills/github-context/SKILL.md
+  h_d644259067950f 1-8
+codex_harness/cli.py
+  h_d644259067950f 1-227
+codex_harness/codex.py
+  h_d644259067950f 1-84
+codex_harness/config.py
+  h_d644259067950f 1-104
+codex_harness/demo.py
+  h_d644259067950f 1-65
+codex_harness/improve.py
+  h_d644259067950f 1-205
+codex_harness/process.py
+  h_d644259067950f 1-73
+codex_harness/report.py
+  h_d644259067950f 1-57
+codex_harness/runner.py
+  h_d644259067950f 1-308
+docs/ARCHITECTURE.md
+  h_d644259067950f 1-19
+docs/EVALUATION.md
+  h_d644259067950f 1-64
+docs/INTEGRATIONS.md
+  h_d644259067950f 1-57
+docs/RESEARCH.md
+  h_d644259067950f 1-77
+docs/TASK_PACKS.md
+  h_d644259067950f 1-80
+docs/VALIDATION.md
+  h_d644259067950f 1-57
+pyproject.toml
+  h_d644259067950f 1-22
+tests/test_harness.py
+  h_d644259067950f 1-298
+tests/test_improve.py
+  h_d644259067950f 1-119
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a3f198317e2ab3866be99ccba154c97a366d2ea6",
+  "prompts": {},
+  "humans": {
+    "h_d644259067950f": {
+      "author": "Aryaman-QA <aryaman.gurjar@coupa.com>"
+    }
+  }
+}
