@@ -1,0 +1,47 @@
+docs/AGENT_USAGE.md
+  s_69cf76441c36e1::t_3863d64a4a4dab 14
+pyproject.toml
+  s_69cf76441c36e1::t_981c6ddf7890d0 14-18
+scripts/check_release.py
+  s_69cf76441c36e1::t_e38300ebb50687 1-35
+.github/workflows/release.yml
+  s_69cf76441c36e1::t_3863d64a4a4dab 33
+  s_69cf76441c36e1::t_e38300ebb50687 1-32,34-72
+tests/test_release.py
+  s_69cf76441c36e1::t_e38300ebb50687 1-37
+docs/RELEASING.md
+  s_69cf76441c36e1::t_54869e81ec8849 35
+  s_69cf76441c36e1::t_3863d64a4a4dab 50
+  s_69cf76441c36e1::t_e38300ebb50687 1-4,6-8,11-34,36-49,51-54,56-63
+  s_69cf76441c36e1::t_981c6ddf7890d0 5,9-10,55
+README.md
+  s_69cf76441c36e1::t_54869e81ec8849 45
+  s_69cf76441c36e1::t_981c6ddf7890d0 42,55
+  s_69cf76441c36e1::t_3863d64a4a4dab 46,48
+MANIFEST.in
+  s_69cf76441c36e1::t_3863d64a4a4dab 1-5
+CONTRIBUTING.md
+  s_69cf76441c36e1::t_3863d64a4a4dab 25-26
+docs/INSTALLATION.md
+  s_69cf76441c36e1::t_0e620949483a49 1-4,6-23,25-26,28-59,61-69,71-101,103-110
+  s_69cf76441c36e1::t_981c6ddf7890d0 5,24,102
+  s_69cf76441c36e1::t_54869e81ec8849 27,60,70
+docs/VALIDATION.md
+  s_69cf76441c36e1::t_981c6ddf7890d0 3,16-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "a0d3be7aff81efcbe799f71c6ebae7ae6b38f8d6",
+  "prompts": {},
+  "sessions": {
+    "s_69cf76441c36e1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a7a5-eeb9-7aa3-93e8-c94ba558a12b",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Aryaman-QA <aryaman.gurjar@coupa.com>"
+    }
+  }
+}
