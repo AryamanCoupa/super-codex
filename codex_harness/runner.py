@@ -102,10 +102,9 @@ def checks(commands, workspace, policy, folder, deadline):
                              env=verifier_env(), log=folder / f"{index}.log")
         except OSError as error:
             result = {"returncode": -1, "reason": "launch_error", "output": str(error), "seconds": 0}
-        # unittest exits successfully for an empty collection. That cannot establish
-        # acceptance, even when preparation accidentally chose the wrong test path.
-        if (result["returncode"] == 0 and not result["reason"]
-                and re.search(r"(?m)^Ran 0 tests? in ", result["output"])):
+        # unittest reports an empty collection with exit 0 on older Python and
+        # exit 5 on newer versions. Neither is a meaningful acceptance baseline.
+        if not result["reason"] and re.search(r"(?m)^Ran 0 tests? in ", result["output"]):
             result["reason"] = "no_tests"
         result["argv"] = argv
         results.append(result)
