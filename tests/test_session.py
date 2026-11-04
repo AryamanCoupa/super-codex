@@ -1,10 +1,12 @@
 import contextlib
 import fcntl
+import hashlib
 import io
 import json
 import os
 import pty
 import select
+import shlex
 import signal
 import stat
 import subprocess
@@ -12,6 +14,7 @@ import sys
 import tempfile
 import termios
 import time
+import tomllib
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -112,20 +115,26 @@ class SessionTests(unittest.TestCase):
         config = self.root / "mcp.json"
         secret = "do-not-print-this-test-token"
         config.write_text(json.dumps({"mcp_servers": {"remote": {"url": "https://example.invalid", "bearer_token_env_var": secret}}}))
-        with patch("codex_harness.session.subprocess.call") as launch, contextlib.redirect_stdout(io.StringIO()) as out:
+        with patch("codex_harness.session.subprocess.call") as launch, \
+                patch("codex_harness.prompt_hook.hook_overrides") as hook, \
+                patch("codex_harness.codex.CodexAdapter") as adapter, \
+                contextlib.redirect_stdout(io.StringIO()) as out:
             self.assertEqual(handle(self.args("--dry-run", "--mcp-config", str(config))), 0)
         launch.assert_not_called()
+        hook.assert_not_called()
+        adapter.assert_not_called()
         self.assertFalse(self.output.exists())
         preview = json.loads(out.getvalue())
         self.assertEqual(preview["repo"], str(self.repo))
         self.assertEqual(preview["mode"], "native_advisory")
-        self.assertEqual(preview["workflow"], "supercodex_skills")
+        self.assertEqual(preview["workflow"], "supercodex_answer_with_skills")
         self.assertTrue(preview["inherits_codex_configuration"])
         self.assertFalse(preview["harness_enforced"])
-        self.assertEqual(preview["prompt_routing"], "native")
+        self.assertEqual(preview["prompt_routing"], "supercodex_answer")
+        self.assertEqual(preview["prompt_hook"], {"requested": True, "status": "pending"})
         self.assertNotIn(secret, out.getvalue())
 
-    def test_old_no_prompt_hook_flag_is_a_compatibility_no_op(self):
+    def test_no_prompt_hook_explicitly_selects_native_skills_only(self):
         previews = []
         with patch("codex_harness.prompt_hook.hook_overrides", side_effect=AssertionError("Unexpected hook preflight")) as hook, \
                 patch("codex_harness.session.subprocess.call") as launch:
@@ -133,9 +142,12 @@ class SessionTests(unittest.TestCase):
                 with contextlib.redirect_stdout(io.StringIO()) as out:
                     self.assertEqual(handle(self.args("--dry-run", *options)), 0)
                 previews.append(json.loads(out.getvalue()))
-        for preview in previews:
-            self.assertEqual(preview["prompt_routing"], "native")
-            self.assertEqual(preview["workflow"], "supercodex_skills")
+        for preview, routing, workflow, requested, status in (
+                (previews[0], "supercodex_answer", "supercodex_answer_with_skills", True, "pending"),
+                (previews[1], "native", "supercodex_skills", False, "disabled")):
+            self.assertEqual(preview["prompt_routing"], routing)
+            self.assertEqual(preview["workflow"], workflow)
+            self.assertEqual(preview["prompt_hook"], {"requested": requested, "status": status})
             self.assertEqual(preview["mode"], "native_advisory")
             self.assertFalse(preview["harness_enforced"])
         self.assertEqual(previews[0]["bundled_skills"], previews[1]["bundled_skills"])
@@ -183,11 +195,25 @@ class SessionTests(unittest.TestCase):
                 handle(self.args("--native", "--dry-run", *options))
         self.assertFalse(self.output.exists())
 
-    def test_research_only_options_require_managed_mode(self):
+    def test_research_and_operator_settings_are_forwarded_to_hooked_answers(self):
+        research = self.root / "private research.json"
+        research.write_text(json.dumps({"mcp_servers": {"research-service": {"command": "fixture-server"}}}))
+        plan = prepare(self.args("--research-mcp", "github", "--research-mcp", "atlassian",
+                                 "--research-mcp-config", str(research), "--operator-model", "preparation-model"))
+        argv = plan["answer_argv"]
+        self.assertEqual([argv[index + 1] for index, value in enumerate(argv[:-1])
+                          if value == "--research-mcp"], ["github", "atlassian"])
+        self.assertEqual(argv[argv.index("--research-mcp-config") + 1], str(research))
+        self.assertEqual(argv[argv.index("--operator-model") + 1], "preparation-model")
+        self.assertNotIn("research-service", plan["mcp"])
+        self.assertNotIn("fixture-server", json.dumps(plan["preview"]))
+        self.assertFalse(self.output.exists())
+
+    def test_research_only_options_require_routing_when_native(self):
         for options in (("--research-mcp", "github"),
                         ("--research-mcp-config", str(self.root / "not-read.json"))):
-            with self.subTest(options=options), self.assertRaisesRegex(ValueError, "--managed"):
-                handle(self.args("--dry-run", *options))
+            with self.subTest(options=options), self.assertRaisesRegex(ValueError, "--no-prompt-hook|--managed"):
+                handle(self.args("--no-prompt-hook", "--dry-run", *options))
         self.assertFalse(self.output.exists())
 
     def test_bootstrap_exposes_every_bundled_skill_for_native_use(self):
@@ -196,7 +222,7 @@ class SessionTests(unittest.TestCase):
         catalog = bundled_skills()
         for message in ("ai news", "Find example repositories", "Fix a fixture bug"):
             with self.subTest(message=message):
-                plan = prepare(self.args(message))
+                plan = prepare(self.args(message, "--no-prompt-hook"))
                 self.assertEqual(plan["skills"], catalog)
                 self.assertEqual(plan["preview"]["bundled_skills"], [row["name"] for row in catalog])
                 self.assertEqual(plan["preview"]["prompt_routing"], "native")
@@ -209,7 +235,7 @@ class SessionTests(unittest.TestCase):
                 self.assertNotIn("Every user request must go through", plan["initial_prompt"])
         self.assertFalse(self.output.exists())
 
-    def test_default_native_launch_needs_no_hook_or_child_model_preflight(self):
+    def test_skills_only_launch_needs_no_hook_or_child_model_preflight(self):
         message = '  ai news about "small models"\r\nKeep """quotes""" and literal $(touch unwanted).\n'
         with patch("codex_harness.session.sys.stdin.isatty", return_value=True), \
                 patch("codex_harness.session.sys.stdout.isatty", return_value=True), \
@@ -218,7 +244,7 @@ class SessionTests(unittest.TestCase):
                 patch("codex_harness.codex.CodexAdapter", side_effect=AssertionError("Unexpected managed child")) as adapter, \
                 patch("codex_harness.session.subprocess.call", return_value=0) as launch, \
                 contextlib.redirect_stderr(io.StringIO()):
-            self.assertEqual(handle(self.args(message, "--mcp", "github")), 0)
+            self.assertEqual(handle(self.args(message, "--mcp", "github", "--no-prompt-hook")), 0)
         hook.assert_not_called()
         adapter.assert_not_called()
         launch.assert_called_once()
@@ -246,6 +272,70 @@ class SessionTests(unittest.TestCase):
         self.assertEqual((self.repo / "existing.txt").read_text(), "Keep this checkout unchanged.\n")
         self.assertFalse((self.root / "unwanted").exists())
 
+    def test_default_launch_registers_owned_hook_and_preserves_initial_request_exactly(self):
+        from codex_harness.prompt_hook import route
+
+        message = '  Find "quoted" repositories\r\nPreserve literal $(touch unwanted).\n'
+        hook_flags = ["-c", "hooks.UserPromptSubmit=[]", "-c", "hooks.state={}"]
+        with patch("codex_harness.session.sys.stdin.isatty", return_value=True), \
+                patch("codex_harness.session.sys.stdout.isatty", return_value=True), \
+                patch("codex_harness.session.shutil.which", return_value="/usr/bin/codex"), \
+                patch("codex_harness.prompt_hook.hook_overrides", return_value=hook_flags) as hook, \
+                patch("codex_harness.codex.CodexAdapter", side_effect=AssertionError("Unexpected managed child")) as adapter, \
+                patch("codex_harness.session.subprocess.call", return_value=0) as launch, \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(handle(self.args(message, "--mcp", "github")), 0)
+        adapter.assert_not_called()
+        launch.assert_called_once()
+        folder, = (self.output / "sessions").iterdir()
+        routing_file = folder / "session-routing.json"
+        hook.assert_called_once_with(["codex"], routing_file)
+        command = launch.call_args.args[0]
+        self.assertEqual(command[-6:-2], hook_flags)
+        self.assertEqual(command[-2], "--")
+        self.assertEqual(launch.call_args.kwargs["cwd"], self.repo)
+        self.assertNotIn(message, command)
+        routing = json.loads(routing_file.read_text())
+        answer = routing["answer_argv"]
+        self.assertIn("answer", answer)
+        self.assertEqual(answer[answer.index("--repo") + 1], str(self.repo))
+        self.assertEqual(answer[answer.index("--config") + 1], str(folder / "worker-policy.json"))
+        self.assertEqual(answer[answer.index("--mcp-config") + 1], str(folder / "worker-mcp.json"))
+        self.assertEqual(answer[answer.index("--output-root") + 1], str(folder / "answers"))
+        self.assertEqual(routing["output_root"], str(folder / "answers"))
+        self.assertEqual(routing["bootstrap_prompt_sha256"], hashlib.sha256(command[-1].encode()).hexdigest())
+        self.assertEqual(route({"hook_event_name": "UserPromptSubmit", "prompt": command[-1]}, routing_file), {})
+        self.assertEqual((folder / "initial-request.txt").read_bytes(), message.encode())
+        bootstrap = (folder / "bootstrap.txt").read_text()
+        initial_answer = shlex.join(answer + ["--prompt-file", str(folder / "initial-request.txt")])
+        self.assertEqual(bootstrap.count(initial_answer), 1)
+        self.assertIn("skill-discovery", bootstrap)
+        metadata = json.loads((folder / "session.json").read_text())
+        self.assertEqual(metadata["prompt_hook"], {"requested": True, "status": "active"})
+        self.assertEqual(metadata["prompt_routing"], "supercodex_answer")
+        self.assertEqual(json.loads((folder / "hook-registration.json").read_text())["status"], "active")
+        for name in ("session-routing.json", "hook-registration.json", "initial-request.txt", "session.json"):
+            self.assertEqual(stat.S_IMODE((folder / name).stat().st_mode), 0o600)
+        for name in ("messages", "answers", "runs"):
+            self.assertFalse((folder / name).exists(), f"Startup invoked a task before the native operator: {name}")
+        self.assertEqual((self.repo / "existing.txt").read_text(), "Keep this checkout unchanged.\n")
+
+    def test_failed_hook_registration_prevents_launch_and_records_failure(self):
+        with patch("codex_harness.session.sys.stdin.isatty", return_value=True), \
+                patch("codex_harness.session.sys.stdout.isatty", return_value=True), \
+                patch("codex_harness.session.shutil.which", return_value="/usr/bin/codex"), \
+                patch("codex_harness.prompt_hook.hook_overrides", side_effect=ValueError("Cannot enable owned hook")), \
+                patch("codex_harness.session.subprocess.call") as launch, \
+                contextlib.redirect_stderr(io.StringIO()):
+            with self.assertRaisesRegex(ValueError, "Cannot enable owned hook"):
+                handle(self.args())
+        launch.assert_not_called()
+        folder, = (self.output / "sessions").iterdir()
+        metadata = json.loads((folder / "session.json").read_text())
+        self.assertEqual(metadata["prompt_hook"], {"requested": True, "status": "failed"})
+        self.assertEqual(json.loads((folder / "hook-registration.json").read_text())["status"], "failed")
+        self.assertFalse((folder / "answers").exists())
+
     def test_non_git_home_can_use_its_private_state_directory(self):
         output = self.repo / ".local/state/super-codex"
         self.assertEqual(session_output_directory(self.repo, output), output)
@@ -270,18 +360,43 @@ class SessionTests(unittest.TestCase):
 
     def test_real_terminal_child_inherits_handles_environment_and_exit_status(self):
         fake = self.root / "native standin.py"
-        fake.write_text('''import json, os, sys
+        fake.write_text('''import json, os, shlex, subprocess, sys, tomllib
 from pathlib import Path
 argv = sys.argv[1:]
+overrides = [argv[index + 1] for index, value in enumerate(argv[:-1]) if value == "-c"]
+if argv[0] == "app-server":
+    definition = next(tomllib.loads(value)["hooks"]["UserPromptSubmit"] for value in overrides
+                      if value.startswith("hooks.UserPromptSubmit="))
+    for line in sys.stdin:
+        request = json.loads(line)
+        assert request["method"] not in ("thread/start", "turn/start")
+        if request["method"] == "initialize":
+            print(json.dumps({"id": request["id"], "result": {"userAgent": "native-fixture"}}), flush=True)
+        elif request["method"] == "hooks/list":
+            hook = {"key": "/<session-flags>/config.toml:user_prompt_submit:0:0",
+                    "source": "sessionFlags", "handlerType": "command", "eventName": "userPromptSubmit",
+                    "command": definition[0]["hooks"][0]["command"], "enabled": True,
+                    "currentHash": "sha256:" + "a" * 64}
+            print(json.dumps({"id": request["id"], "result": {"data": [{"errors": [], "hooks": [hook]}]}}), flush=True)
+    sys.exit(0)
 folder = Path(argv[argv.index("--add-dir") + 1])
 policy = json.loads((folder / "worker-policy.json").read_text())
 bootstrap = (folder / "bootstrap.txt").read_text()
 print("NATIVE_TUI_READY", flush=True)
 received = sys.stdin.readline().strip()
+definition = next(tomllib.loads(value)["hooks"]["UserPromptSubmit"] for value in overrides
+                  if value.startswith("hooks.UserPromptSubmit="))
+hook_command = shlex.split(definition[0]["hooks"][0]["command"])
+hook_responses = []
+for prompt in (argv[-1], received):
+    result = subprocess.run(hook_command, input=json.dumps({"hook_event_name": "UserPromptSubmit", "prompt": prompt}),
+                            text=True, capture_output=True, check=True, timeout=5)
+    hook_responses.append(json.loads(result.stdout))
 capture = {"argv": argv, "cwd": str(Path.cwd()), "stdin_tty": sys.stdin.isatty(),
            "stdout_tty": sys.stdout.isatty(), "inherited": os.environ.get("SUPERCODEX_TEST_NATIVE"),
            "worker_marker": os.environ.get("SUPERCODEX_WORKER"), "worker_model": policy["model"],
-           "received": received, "mcp_exists": (folder / "worker-mcp.json").is_file(), "bootstrap": bootstrap}
+           "received": received, "mcp_exists": (folder / "worker-mcp.json").is_file(), "bootstrap": bootstrap,
+           "hook_responses": hook_responses}
 (folder / "native-capture.json").write_text(json.dumps(capture))
 print("NATIVE_TUI_DONE", flush=True)
 sys.exit(7)
@@ -340,11 +455,25 @@ sys.exit(7)
         self.assertEqual(capture["worker_model"], "test-worker")
         self.assertTrue(capture["mcp_exists"])
         overrides = [capture["argv"][index + 1] for index, value in enumerate(capture["argv"][:-1]) if value == "-c"]
-        self.assertFalse(any(value.startswith("hooks.") for value in overrides))
-        self.assertFalse((folder / "session-routing.json").exists())
-        self.assertFalse((folder / "hook-registration.json").exists())
+        definition = next(tomllib.loads(value)["hooks"]["UserPromptSubmit"] for value in overrides
+                          if value.startswith("hooks.UserPromptSubmit="))
+        trusted = next(tomllib.loads(value)["hooks"]["state"] for value in overrides
+                       if value.startswith("hooks.state="))
+        self.assertEqual(trusted, {"/<session-flags>/config.toml:user_prompt_submit:0:0":
+                                  {"trusted_hash": "sha256:" + "a" * 64}})
+        self.assertIn(str(folder / "session-routing.json"), shlex.split(definition[0]["hooks"][0]["command"]))
+        self.assertEqual(capture["hook_responses"][0], {})
+        instruction = capture["hook_responses"][1]["hookSpecificOutput"]["additionalContext"]
+        answer = shlex.split(instruction.splitlines()[1])
+        self.assertIn("answer", answer)
+        self.assertEqual(Path(answer[answer.index("--prompt-file") + 1]).read_text(), "terminal-input-check")
+        self.assertEqual(len(list((folder / "messages").glob("*.prompt.txt"))), 1)
+        self.assertTrue((folder / "session-routing.json").is_file())
+        self.assertEqual(json.loads((folder / "hook-registration.json").read_text())["status"], "active")
         metadata = json.loads((folder / "session.json").read_text())
-        self.assertEqual(metadata["workflow"], "supercodex_skills")
+        self.assertEqual(metadata["workflow"], "supercodex_answer_with_skills")
+        self.assertEqual(metadata["prompt_hook"], {"requested": True, "status": "active"})
+        self.assertFalse((folder / "answers").exists())
         for name in metadata["bundled_skills"]:
             self.assertIn(name, capture["bootstrap"])
         self.assertIn(task, capture["bootstrap"])
@@ -354,7 +483,8 @@ sys.exit(7)
         self.assertFalse(unwanted.exists())
         self.assertEqual(json.loads((folder / "exit.json").read_text())["returncode"], 7)
         self.assertEqual(stat.S_IMODE(folder.stat().st_mode), 0o700)
-        for name in ("worker-policy.json", "worker-mcp.json", "bootstrap.txt", "session.json"):
+        for name in ("worker-policy.json", "worker-mcp.json", "bootstrap.txt", "session.json",
+                     "session-routing.json", "hook-registration.json"):
             self.assertEqual(stat.S_IMODE((folder / name).stat().st_mode), 0o600)
         self.assertEqual([path.name for path in self.repo.iterdir()], ["existing.txt"])
         self.assertEqual((self.repo / "existing.txt").read_text(), "Keep this checkout unchanged.\n")

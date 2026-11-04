@@ -4,7 +4,7 @@
 
 SuperCodex reuses Codex authentication; it does not copy credentials into a repository. Managed invocations ignore the user's `config.toml` by default, but this is not a guarantee that every global skill, managed policy or project instruction is absent. Audit those sources for reproducible benchmarks. With the lower-level `run` command, `inherit_user_config = true` in a private local policy enables existing MCP/provider configuration, whose contents then affect the run.
 
-In the 0.5.4 development build, default `sc` opens native Codex with skill guidance and preserves configured integrations and authentication. The operator reads relevant GitHub, Atlassian, browser or research skills and uses the available tools directly. No mandatory `answer` command, routing hook or child process stands between a normal request and its connected tools. `sc --managed` and `answer` remain explicit options with separately selected worker/research integrations. See [the mode distinction](AGENT_USAGE.md).
+In the 0.5.5 development build, default `sc` opens native Codex with skills and per-message routing through `answer`. The outer session preserves configured integrations and authentication, while managed children use separately selected worker/research connections. Skills guide selection and use of tools available to each executing role. `sc --no-prompt-hook` selects skills-only native work with existing Codex connections; `sc --managed` opens the controller's own interface. See [the mode distinction](AGENT_USAGE.md).
 
 The optional managed exec adapter uses `codex exec --json --ephemeral --sandbox workspace-write`, passes prompts through stdin, and sets `approval_policy="never"`. Commands requiring an interactive escalation fail in automation. It does not use the dangerous sandbox-bypass flag. Advisors use `read-only`. Project instructions remain subject to Codex's trust/loading behavior. [Official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
@@ -12,7 +12,7 @@ The optional managed exec adapter uses `codex exec --json --ephemeral --sandbox 
 
 Native research works from any directory using the existing Codex connection permissions. It does not require a committed source snapshot. For example, ask `sc` to find matching repositories; the GitHub skill guides actual tool discovery, search scope, pagination and evidence reporting. Skills cannot create access to repositories that the connected account cannot see.
 
-The following settings apply only when you explicitly choose managed research through `answer` or `--managed`. In a directory without Git commits, that controller creates an empty private workspace for preparation without copying the selected directory's files or initializing it. Managed coding remains gated on a clean committed target selected with `--repo`.
+The following settings apply to managed research, including default hook-routed `answer` requests as well as direct `answer` or `--managed` commands. In a directory without Git commits, the controller creates an empty private workspace for preparation without copying the selected directory's files or initializing it. Managed coding remains gated on a clean committed target selected with `--repo`.
 
 Select research presets explicitly; the GitHub example still requires the token described below:
 
@@ -22,9 +22,9 @@ sc --managed --no-stream --research-mcp atlassian "Find the issue and its linked
 sc --managed --no-stream --research-mcp-config /path/to/private-research.toml "Research this question"
 ```
 
-`--research-mcp` is repeatable. A supplied preset replaces a same-named server from the research file. These flags apply to the managed controller, not `--native`. Worker `--mcp` selections do not automatically become research connections.
+`--research-mcp` is repeatable. A supplied preset replaces a same-named server from the research file. Default hooked sessions forward `--research-mcp` and `--research-mcp-config` to their delegated `answer` commands; direct `answer` and `--managed` accept them too. They conflict with `--no-prompt-hook`, whose native tools already follow ordinary Codex configuration. Worker `--mcp` selections do not automatically become research connections.
 
-To reuse selected connections with `sc --managed --no-stream`, create `research.toml` under `${XDG_CONFIG_HOME:-~/.config}/super-codex/`. Managed preparation reads this file only when it exists; `--research-mcp-config` selects a different file instead. Default native `sc` already uses ordinary Codex connections. Keep the research file private and outside public repositories. It can reference a server already configured in Codex:
+To reuse selected connections with default routing or direct managed commands, create `research.toml` under `${XDG_CONFIG_HOME:-~/.config}/super-codex/`. Managed preparation reads this file only when it exists; `--research-mcp-config` selects a different file instead. The outer native session's connections are not automatically imported by its child requests. Keep this file private and outside public repositories. It can reference a server already configured in Codex:
 
 ```toml
 # The name must match a server in your local Codex config.toml.
@@ -101,7 +101,7 @@ Only explicitly selected servers are supplied by SuperCodex to each phase. A ser
 
 Twelve bundled task skills cover skill discovery, research, planning, debugging, verification, economical delegation, browser work, GitHub/Atlassian context, evaluation, experiment selection and learning-data curation. Inspect them with `sc skills`, search bundled names/descriptions with `sc skills --search "GitHub repositories"`, or read one with `sc skills github-context`. Search also supports `--json` and makes no model calls. It is a keyword shortlist, not a search of third-party skills or a guarantee that the first result fits the task.
 
-Native `sc` supplies the full catalog. The `skill-discovery` workflow directs the operator to check both that catalog and skills already available in the native session for each new task, read the relevant instructions and apply them with existing tools. An empty bundled search does not rule out a useful installed or project skill. Discovery does not download or install additional skills. Packs select the skills they include in their own instructions. For ordinary Codex sessions launched without `sc`, install the operator skill with `sc agent install --user` to expose the same catalog. See [skill coverage and installation](AGENT_USAGE.md). Installing skills does not install or authorize the services they describe.
+Native `sc` supplies the full catalog. The `skill-discovery` workflow directs each executing role to check its available skills, read the relevant instructions and apply them within its assignment. Default routing still requires the supplied command and receipt; selecting a skill does not bypass it. Managed workers never invoke `answer` recursively. An empty bundled search does not rule out a useful installed or project skill, but skills/tools in the outer session must not be assumed available to a child. Discovery does not download or install additional skills. Packs select skills in their manifest. For ordinary Codex sessions launched without `sc`, install the operator skill with `sc agent install --user`; this alone does not register routing hooks. See [skill coverage and installation](AGENT_USAGE.md). Installing skills does not install or authorize their services.
 
 ## Open models
 

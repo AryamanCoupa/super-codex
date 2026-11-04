@@ -32,6 +32,14 @@ def worker_context():
         "suggestions and memory queries are available. New runs, experiments, training and pack mutations belong "
         "to the top-level operator: return a concise recommendation in your handoff if needed. "
         "Do not bypass the inherited SUPERCODEX_WORKER guard or launch unaccounted child model jobs.\n"
+        "Apply skill-discovery within your assigned role: select the smallest relevant set from this "
+        "catalog and skills actually advertised in your session, then read their instructions. "
+        "Use `skills --search \"task keywords\"` with the absolute launcher above when selection is unclear. "
+        "The assigned role, output JSON schema, tool permissions and parent budget take precedence over "
+        "general skill guidance. Preparation remains read-only; skill discovery never authorizes nested "
+        "answer commands, agents, model jobs or expanded permissions. Reuse unchanged skills already read.\n"
+        "Bundled skill entry points (metadata only; read relevant bodies on demand):\n"
+        + skill_catalog_text() + "\n"
         "</supercodex_cli>"
     )
 

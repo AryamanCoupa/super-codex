@@ -54,6 +54,27 @@ class PromptHookTests(unittest.TestCase):
         self.assertEqual(stat.S_IMODE(prompt.parent.stat().st_mode), 0o700)
         self.assertIn("Before native browsing", context)
         self.assertIn("Do not silently bypass", context)
+        self.assertIn("skill-discovery", context)
+        self.assertIn("read its receipt", context)
+
+    def test_routing_keeps_selected_configuration_and_requires_normal_permission_retry(self):
+        configured = self.argv + ["--pack", "/fixture pack", "--config", "/fixture policy.json",
+                                  "--mcp-config", "/fixture tools.json",
+                                  "--research-mcp-config", "/fixture research.toml"]
+        configuration = json.loads(self.routing.read_text())
+        configuration["answer_argv"] = configured
+        self.routing.write_text(json.dumps(configuration))
+        with patch("codex_harness.prompt_hook.subprocess.Popen") as launch:
+            output = route(self.event("Find the requested repository"), self.routing)
+        launch.assert_not_called()
+        context = output["hookSpecificOutput"]["additionalContext"]
+        command = shlex.split(context.splitlines()[1])
+        self.assertEqual(command[:len(configured)], configured)
+        self.assertIn("normal approval flow", context)
+        self.assertIn("rerun the exact same command", context)
+        self.assertIn("budgets unchanged", context)
+        self.assertIn("If approval is denied or unavailable", context)
+        self.assertNotIn("--dangerously", command)
 
     def test_bootstrap_and_managed_workers_do_not_route_recursively(self):
         self.assertEqual(route(self.event(self.bootstrap), self.routing), {})

@@ -1,5 +1,6 @@
-"""Native Codex bootstrap by default, with an explicit enforced controller."""
+"""Native Codex with per-message answer routing and an explicit controller."""
 
+import hashlib
 import json
 import os
 import shlex
@@ -36,7 +37,7 @@ def register_parser(subparsers):
     parser.add_argument("--research-mcp-config", help="Private research MCP JSON/TOML; defaults to user config/super-codex/research.toml when present")
     parser.add_argument("--output-root", help="Session/artifact root; default: ~/.local/state/super-codex")
     parser.add_argument("--no-alt-screen", action="store_true", help="Use Codex's inline terminal mode in the native bootstrap")
-    parser.add_argument("--no-prompt-hook", action="store_true", help="Compatibility flag; native sessions no longer install prompt-routing hooks")
+    parser.add_argument("--no-prompt-hook", action="store_true", help="Use skills directly in native Codex without per-message answer routing")
     parser.add_argument("--no-stream", action="store_true", help="Implies --managed; use buffered Codex exec output for compatibility")
     parser.add_argument("--dry-run", action="store_true", help="Preview the launch without writing files or invoking Codex")
 
@@ -88,35 +89,55 @@ def prepare(args):
         answer_argv += ["--pack", str(pack)]
     if mcp:
         answer_argv += ["--mcp-config", str(mcp_file)]
+    if args.operator_model:
+        answer_argv += ["--operator-model", args.operator_model]
+    for preset in args.research_mcp:
+        answer_argv += ["--research-mcp", preset]
+    if args.research_mcp_config:
+        answer_argv += ["--research-mcp-config", str(Path(args.research_mcp_config).expanduser().resolve())]
+    routing_enabled = not getattr(args, "no_prompt_hook", False)
+    routing_instructions = (
+        "This session routes each user request through SuperCodex answer. The UserPromptSubmit hook "
+        "supplies the exact command and a private file containing the verbatim user message. Execute that "
+        "command before doing the task directly; then inspect its receipt and report its actual result. "
+        "Skill discovery applies inside the assigned managed request. Command discovery alone is not execution. "
+        "If an outer permission restriction prevents startup, use the host's normal approval flow to retry "
+        "the same command when permitted. Keep the child's sandbox, policy and tools unchanged. Do not "
+        "silently fall back to native work or invent a result after a blocked run. Explicit user requests "
+        "to change or bypass this workflow and higher-priority instructions still apply.\n"
+        if routing_enabled else
+        "This session uses --no-prompt-hook: use relevant skills and native tools directly. "
+        "Managed commands are optional; no child model or receipt is required for ordinary work.\n"
+    )
     skills = bundled_skills()
     prompt = (
         f"You are the SuperCodex {__version__} operator in the current native Codex session. "
-        "Use the relevant skills below to do the user's work with your existing tools. "
-        "Research, conversation and coding normally happen in this session; no answer command, "
-        "managed controller or additional model process is required for an ordinary request. "
         "Existing higher-priority instructions and user constraints still apply.\n\n"
+        + routing_instructions
         + skill_text()
         + f"\n<session_defaults>\nWorking project: {json.dumps(str(repo))}\n"
         + f"Session artifacts: {json.dumps(str(folder))}\n"
         + f"Optional worker policy: {json.dumps(str(policy_file))}\n"
         + f"Selected pack: {json.dumps(str(pack) if pack else None)}\n"
         + f"Selected additional MCP servers: {json.dumps(sorted(mcp))}\n"
+        + routing_instructions
         + "For each new task, apply skill-discovery: check the current session and bundled skill catalogs, "
         "use keyword search when selection is unclear, and read only the relevant skill instructions. "
-        "Reuse unchanged instructions already read, announce which skills you are applying, then execute the task. "
+        "Reuse unchanged instructions already read. Follow the session's selected execution mode; routed "
+        "requests discover and apply skills within the managed command. "
         "A skill catalog or startup acknowledgment is not the requested result. For repository discovery, "
-        "use the connected GitHub tools directly; initialize/discover operations when required and follow "
+        "use the available GitHub tools in that execution context; initialize/discover operations and follow "
         "pagination. For current news, retrieve fresh sources and cite them. For coding, inspect the target, "
         "make a scoped change, run meaningful checks and report the observed evidence. Preserve unrelated "
-        "changes and do not claim a harness run or receipt for work performed natively.\n"
-        + "The CLI remains available when explicitly requested or useful for isolated verification, repeated "
-        "evaluation, task packs or cost comparisons. Do not launch child model jobs merely to answer a "
-        "question. Native research does not require a clean Git checkout. CLI jobs have their own source, "
+        "changes. A research receipt is advisory, not a verified coding run.\n"
+        + "The CLI also supports isolated verification, repeated evaluation, task packs and cost comparisons. "
+        "Do not launch unrelated or recursive model jobs. Research does not require a clean Git checkout. "
+        "CLI jobs have their own source, "
         "permission and accounting requirements; use the normal authorization flow if an explicit job "
         "needs permissions, and report actual failures. Never bypass the native sandbox or approval policy.\n"
         + f"Optional managed coding template (replace TASK_FILE): {shlex.join(run_argv)}\n"
-        + f"Optional accounted answer template (append a quoted prompt or --prompt-file): {shlex.join(answer_argv)}\n"
-        + "Preserve the selected policy, pack and tools when choosing these optional commands. Inspect their "
+        + f"{'Required' if routing_enabled else 'Optional'} answer command template (append a quoted prompt or --prompt-file): {shlex.join(answer_argv)}\n"
+        + "Preserve the selected policy, pack and tools when executing these commands. Inspect their "
         "receipts before describing their results as harness-verified. Native operator usage is separate "
         "from their reported model usage. Select planning, review, repair, escalation or multi-agent "
         "experiments only when they add value for this task.\n</session_defaults>\n"
@@ -125,8 +146,13 @@ def prepare(args):
         prompt += f"\n<selected_task_pack>\n{context}\n</selected_task_pack>\n"
     if args.prompt:
         prompt += (f"\nInitial user request file: {json.dumps(str(folder / 'initial-request.txt'))}\n"
-                   "Carry out this request using the relevant skills and current tools; initialization alone does not complete it.\n"
                    "<user_task>\n" + args.prompt + "\n</user_task>\n")
+        if routing_enabled:
+            prompt += ("Execute this required initial answer command exactly once, then inspect its receipt. "
+                       "The initialization message is excluded from the hook to avoid duplicate routing:\n"
+                       + shlex.join(answer_argv + ["--prompt-file", str(folder / "initial-request.txt")]) + "\n")
+        else:
+            prompt += "Carry out this request using the relevant skills and current tools; initialization alone does not complete it.\n"
     else:
         prompt += ("\nNo task has been supplied yet. Briefly say SuperCodex is ready and wait for the user's "
                    "next message. Do not scan the repository, create tasks or start additional model jobs yet.\n")
@@ -140,13 +166,13 @@ def prepare(args):
         argv += ["-c", mcp_override(name, config)]
     # Keep arbitrary task/pack content out of argv and avoid platform argument-size limits.
     # The file exists before launch and its directory is explicitly writable/readable to Codex.
-    initial_prompt = (
-        "Load the SuperCodex skill catalog and session defaults from "
-        f"{json.dumps(str(folder / 'bootstrap.txt'))}. For each task, start with skill-discovery, "
-        "choose and read the relevant skills, then use "
-        "the current Codex tools to carry out the user's task in this session. Respect existing higher-priority instructions. If no task was "
-        "provided, briefly confirm readiness and wait."
-    )
+    initial_prompt = ("Load the SuperCodex skill catalog and session defaults from "
+                      f"{json.dumps(str(folder / 'bootstrap.txt'))}. "
+                      + ("Each user request routes through the SuperCodex answer command supplied by the hook. "
+                         "If the bootstrap includes an initial request, run its required answer command once and inspect the receipt. "
+                         if routing_enabled else
+                         "For each task, start with skill-discovery, read the relevant skills and use native tools directly. ")
+                      + "Respect existing higher-priority instructions. If no task was provided, briefly confirm readiness and wait.")
     argv += ["--", initial_prompt]
     # The real command stays in memory. Preview/log metadata never expose MCP values.
     public_argv = list(policy["codex_command"]) + argv[len(policy["codex_command"]):]
@@ -155,14 +181,22 @@ def prepare(args):
             public_argv[index] = "mcp_servers.<selected-server>=<private configuration>"
     public_argv[-1] = "<Read the SuperCodex bootstrap file in the session directory>"
     preview = {"version": __version__, "mode": "native_advisory", "harness_enforced": False, "repo": str(repo), "pack": str(pack) if pack else None,
-               "workflow": "supercodex_skills",
-               "prompt_routing": "native", "bundled_skills": [row["name"] for row in skills],
+               "workflow": "supercodex_answer_with_skills" if routing_enabled else "supercodex_skills",
+               "prompt_routing": "supercodex_answer" if routing_enabled else "native",
+               "prompt_hook": {"requested": routing_enabled, "status": "pending" if routing_enabled else "disabled"},
+               "bundled_skills": [row["name"] for row in skills],
                "operator_model": operator, "worker_model": policy["model"], "worker_policy": str(policy_file),
                "artifact_directory": str(folder), "additional_mcp_servers": sorted(mcp), "command": public_argv,
                "inherits_codex_configuration": True,
-               "note": "Native Codex with task-relevant skills and existing tools. No routing hooks or compulsory child model calls. Managed workflows are explicit opt-ins."}
+               "note": ("Native Codex UI with per-message answer-command instructions and skill discovery. "
+                        "Hook delivery is not proof of command execution; inspect actual receipts. "
+                        "The answer child uses buffered exec; outer native model usage is separate."
+                        if routing_enabled else
+                        "Native Codex with task-relevant skills and existing tools. Routing is explicitly disabled.")}
+    routing = {"answer_argv": answer_argv, "output_root": str(folder / "answers"),
+               "bootstrap_prompt_sha256": hashlib.sha256(initial_prompt.encode()).hexdigest()}
     return {"argv": argv, "repo": repo, "folder": folder, "policy": policy, "mcp": mcp, "pack": pack,
-            "answer_argv": answer_argv, "skills": skills,
+            "answer_argv": answer_argv, "skills": skills, "routing": routing,
             "prompt": prompt, "initial_prompt": initial_prompt, "preview": preview}
 
 
@@ -173,8 +207,8 @@ def handle(args):
     if managed:
         from .controller import handle as controlled_handle
         return controlled_handle(args)
-    if args.research_mcp or args.research_mcp_config:
-        raise ValueError("Research tool settings require --managed; the native bootstrap uses your existing Codex connections")
+    if args.no_prompt_hook and (args.research_mcp or args.research_mcp_config):
+        raise ValueError("Research tool settings require answer routing or --managed; omit --no-prompt-hook")
     return handle_native(args)
 
 
@@ -195,11 +229,36 @@ def handle_native(args):
                 "bootstrap.txt": plan["prompt"], "session.json": json.dumps(plan["preview"], indent=2)}
     if args.prompt:
         payloads["initial-request.txt"] = args.prompt
+    if plan["preview"]["prompt_hook"]["requested"]:
+        payloads["session-routing.json"] = json.dumps(plan["routing"], indent=2)
     for name, content in payloads.items():
         with (folder / name).open("x", encoding="utf-8") as stream:
             os.chmod(folder / name, 0o600)
             stream.write(content if name == "initial-request.txt" else content + "\n")
-    print(f"SuperCodex: native Codex with {len(plan['skills'])} task skills available.\nOpening Codex in {plan['repo']}\nSession artifacts: {folder}", file=sys.stderr, flush=True)
+    if plan["preview"]["prompt_hook"]["requested"]:
+        from .prompt_hook import hook_overrides
+
+        try:
+            overrides = hook_overrides(plan["policy"]["codex_command"], folder / "session-routing.json")
+        except (OSError, ValueError) as error:
+            plan["preview"]["prompt_hook"]["status"] = "failed"
+            (folder / "session.json").write_text(json.dumps(plan["preview"], indent=2) + "\n")
+            with (folder / "hook-registration.json").open("x", encoding="utf-8") as stream:
+                os.chmod(folder / "hook-registration.json", 0o600)
+                json.dump({"status": "failed", "event": "UserPromptSubmit", "error": str(error)}, stream)
+            with (folder / "exit.json").open("x", encoding="utf-8") as stream:
+                os.chmod(folder / "exit.json", 0o600)
+                json.dump({"status": "hook_registration_failed", "error": str(error)}, stream)
+            raise
+        plan["argv"][-2:-2] = overrides
+        plan["preview"]["command"][-2:-2] = overrides
+        plan["preview"]["prompt_hook"]["status"] = "active"
+        with (folder / "hook-registration.json").open("x", encoding="utf-8") as stream:
+            os.chmod(folder / "hook-registration.json", 0o600)
+            json.dump({"status": "active", "event": "UserPromptSubmit", "overrides": overrides}, stream)
+        (folder / "session.json").write_text(json.dumps(plan["preview"], indent=2) + "\n")
+    mode = "per-message answer routing" if plan["preview"]["prompt_hook"]["requested"] else "direct native tools"
+    print(f"SuperCodex: native Codex with {mode} and {len(plan['skills'])} task skills.\nOpening Codex in {plan['repo']}\nSession artifacts: {folder}", file=sys.stderr, flush=True)
     try:
         # Inherit terminal handles, native authentication/configuration and permission behavior.
         result = subprocess.call(plan["argv"], cwd=plan["repo"])

@@ -1,8 +1,18 @@
 # Validation and requirement audit
 
-Validation recorded 2026-11-05, with current local 0.5.4 and historical release results distinguished below. Local platform: macOS arm64, Python 3.11.0, Git 2.50.1, Codex CLI 0.164.0. CI covers macOS/Linux and Python 3.11/3.13, with a separate upstream GEPA integration job. Public CI and release outcomes are recorded in [GitHub Actions](https://github.com/AryamanCoupa/super-codex/actions). The live smoke tests establish execution wiring, not a model-quality comparison.
+Validation recorded 2026-11-05, with current local 0.5.5 and historical release results distinguished below. Local platform: macOS arm64, Python 3.11.0, Git 2.50.1, Codex CLI 0.164.0. CI covers macOS/Linux and Python 3.11/3.13, with a separate upstream GEPA integration job. Public CI and release outcomes are recorded in [GitHub Actions](https://github.com/AryamanCoupa/super-codex/actions). The live smoke tests establish execution wiring, not a model-quality comparison.
 
-## Local 0.5.4 native skills
+## Local 0.5.5 restored routing with skills
+
+All **350 tests passed** in 99.542 seconds, including the optional upstream GEPA contract. The wheel and source archive passed strict metadata checks, and all 68 packaged code/asset files matched the checkout.
+
+Default native startup again registers the exact owned UserPromptSubmit hook with session-scoped trust. Each message receives a concrete `answer --prompt-file` command; `--no-prompt-hook` explicitly selects direct native work. Startup tests cover pending/active/failed registration, preserved configuration and permissions, exact initial request text, bootstrap exclusion, and forwarding of research settings and the preparation-model override. A failed registration prevents launch instead of silently disabling the requested workflow.
+
+The controlling-terminal fixture exercises hook inspection and native terminal input, executes the real hook for bootstrap and subsequent input, and checks exact capture without model calls. A separate two-turn test with the installed Codex binary and a local Responses fixture confirms both original messages reached private prompt files and both model requests received routing context. It made no external model calls and does not establish live model compliance with the delegated command.
+
+Preparation, implementation, planning and review now receive the bundled skill catalog without inlining all skill bodies. Tests exercise discovery from a different directory within a managed worker and reject recursive answer jobs. A narrowly matched pre-model exec startup permission failure gets actionable host-approval guidance; later tool errors and failures with model events or usage do not receive that classification. The harness does not retry automatically, change child sandbox settings or claim to fix host permissions. The delegated answer transport remains buffered; native UI streaming and child answer streaming are distinct.
+
+## Historical local 0.5.4 native skills
 
 The initial skills-first commit passed the complete [CI matrix and upstream GEPA contract](https://github.com/AryamanCoupa/super-codex/actions/runs/41920513107). Local validation exercised the 338-test suite; an intermediate example-order failure was corrected and its installation/catalog checks passed. The initial wheel/source archive passed metadata validation with all 67 packaged source/asset files matching the checkout and eleven readable skills.
 

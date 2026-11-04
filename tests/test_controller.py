@@ -90,6 +90,7 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(plan["preview"]["operator_model"], "cheap")
         self.assertFalse(plan["policy"]["inherit_user_config"])
         self.assertEqual(plan["preview"]["mode"], "managed")
+        self.assertEqual(plan["preview"]["prompt_hook"], {"requested": False, "status": "not_applicable"})
         self.assertTrue(plan["preview"]["harness_enforced"])
         self.assertEqual(prepare(self.args("--operator-model", "custom"))["preview"]["operator_model"], "custom")
         self.assertFalse((self.root / "artifacts").exists())
@@ -161,6 +162,66 @@ class ControllerTests(unittest.TestCase):
         self.assertFalse(receipt["harness_run"] or receipt["verified"] or receipt["applied"])
         runner.assert_not_called()
         self.assertEqual(receipt["totals"]["tokens"], 120)
+
+    def startup_failure(self, log_text, **overrides):
+        response = {"completed": False, "returncode": 1, "message": "", "usage": None,
+                    "cost_usd": None, "reason": None, "transport": "exec", "events": []}
+        response.update(overrides)
+        adapter = self.advisor(**response)
+        def fail(*args, **kwargs):
+            Path(args[5]).write_text(log_text)
+            return dict(response)
+        adapter.advise.side_effect = fail
+        return adapter
+
+    def test_exact_premodel_permission_failure_has_host_approval_guidance_without_retry(self):
+        log_text = ("WARNING: proceeding, even though we could not create PATH aliases: Operation not permitted (os error 1)\n"
+                    "Error: failed to initialize in-process app-server client: Operation not permitted (os error 1)\n")
+        plan = self.plan()
+        adapter, runner = self.startup_failure(log_text), self.runner()
+        receipt = self.turn(plan, adapter=adapter, run_fn=runner)
+        self.assertEqual(receipt["status"], "preparation_failed")
+        self.assertEqual(receipt["preparation"]["failure_kind"], "startup_permission_denied")
+        self.assertIn("request approval to retry the same SuperCodex command", receipt["reason"])
+        self.assertIn("Preserve the child Codex sandbox", receipt["reason"])
+        self.assertFalse(receipt["harness_run"] or receipt["verified"] or receipt["applied"])
+        self.assertIsNone(receipt["totals"]["tokens"])
+        self.assertEqual(adapter.advise.call_count, 1)
+        runner.assert_not_called()
+        self.assertEqual(json.loads(Path(receipt["receipt_path"]).read_text()), receipt)
+        self.assertFalse(plan["policy"]["inherit_user_config"])
+
+    def test_permission_diagnostic_does_not_misclassify_later_events_usage_or_other_transports(self):
+        log_text = "Error: failed to initialize in-process app-server client: Operation not permitted (os error 1)\n"
+        cases = [
+            {"events": [{"type": "thread.started"}]},
+            {"usage": {"input_tokens": 0, "cached_input_tokens": 0, "output_tokens": 0}},
+            {"transport": "app-server"},
+            {"message": "A model response exists"},
+            {"reason": "timeout"},
+        ]
+        for overrides in cases:
+            with self.subTest(overrides=overrides):
+                adapter, runner = self.startup_failure(log_text, **overrides), self.runner()
+                receipt = self.turn(adapter=adapter, run_fn=runner)
+                self.assertNotIn("failure_kind", receipt["preparation"])
+                self.assertNotIn("request approval", receipt["reason"])
+                self.assertEqual(adapter.advise.call_count, 1)
+                runner.assert_not_called()
+
+    def test_other_startup_errors_keep_generic_failure_without_exposing_log_content(self):
+        for log_text in ("Operation not permitted while accessing a provider\n",
+                         "WARNING: proceeding, even though we could not create PATH aliases: Operation not permitted (os error 1)\n",
+                         "Error: private fixture connection detail\n"):
+            with self.subTest(log_text=log_text):
+                runner = self.runner()
+                receipt = self.turn(adapter=self.startup_failure(log_text), run_fn=runner)
+                self.assertEqual(receipt["status"], "preparation_failed")
+                self.assertNotIn("failure_kind", receipt["preparation"])
+                self.assertIn("Inspect", receipt["reason"])
+                self.assertNotIn("private fixture", receipt["reason"])
+                self.assertNotIn("request approval", receipt["reason"])
+                runner.assert_not_called()
 
     def uncommitted_source(self, name, initialize=False):
         self.repo = self.root / name

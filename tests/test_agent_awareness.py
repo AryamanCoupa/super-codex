@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from codex_harness.agent_tools import invocation, worker_context
+from codex_harness.agent_tools import bundled_skills, invocation, worker_context
 from codex_harness.codex import CodexAdapter
 from codex_harness.config import load_policy
 
@@ -35,7 +35,7 @@ class AgentAwarenessTests(unittest.TestCase):
                     "'sandbox': sys.argv[sys.argv.index('--sandbox') + 1]}")
         adapter = CodexAdapter()
         original_environment = os.environ.get("SUPERCODEX_WORKER")
-        for role in ("implement", "plan", "review"):
+        for role in ("implement", "plan", "review", "prepare"):
             with self.subTest(role=role):
                 log = self.root / f"{role}.log"
                 task_prompt = f"Perform {role} on the scoped task."
@@ -52,6 +52,14 @@ class AgentAwarenessTests(unittest.TestCase):
                 self.assertEqual(log.with_name(f"{role}.effective-prompt.txt").read_text(), expected)
                 self.assertEqual(result["effective_prompt_sha256"], hashlib.sha256(expected.encode()).hexdigest())
                 self.assertEqual(result["cli_context_sha256"], hashlib.sha256(worker_context().encode()).hexdigest())
+                self.assertIn("skill-discovery", received["prompt"])
+                self.assertIn("output JSON schema", received["prompt"])
+                for row in bundled_skills():
+                    self.assertIn(row["name"], received["prompt"])
+                    self.assertIn(row["description"], received["prompt"])
+                    self.assertIn(row["path"], received["prompt"])
+                    body = Path(row["path"]).read_text().split("---", 2)[2].strip()
+                    self.assertNotIn(body, received["prompt"])
         self.assertEqual(os.environ.get("SUPERCODEX_WORKER"), original_environment)
         self.assertEqual(list(self.workspace.iterdir()), [])
 
@@ -65,9 +73,12 @@ class AgentAwarenessTests(unittest.TestCase):
             "    p = subprocess.run(launch + args, capture_output=True, text=True, timeout=10)\n"
             "    return {'code': p.returncode, 'stdout': p.stdout, 'stderr': p.stderr}\n"
             "catalog = call(['commands', '--json'])\n"
+            "skills = call(['skills', '--search', 'github repositories', '--json'])\n"
+            "skill = call(['skills', 'skill-discovery'])\n"
             "nested = call(['run', 'missing-task.json', '--repo', '.', '--output', 'nested-runs'])\n"
+            "answer = call(['answer', 'nested request', '--repo', '.'])\n"
             "mutation = call(['fixtures', 'nested-fixtures'])\n"
-            "info = {'catalog': catalog, 'nested': nested, 'mutation': mutation, "
+            "info = {'catalog': catalog, 'skills': skills, 'skill': skill, 'nested': nested, 'answer': answer, 'mutation': mutation, "
             "'created': Path('nested-runs').exists() or Path('nested-fixtures').exists()}"
         )
         result = CodexAdapter().run(self.policy, "offline", self.workspace, "Inspect available commands.",
@@ -77,7 +88,11 @@ class AgentAwarenessTests(unittest.TestCase):
         self.assertEqual(report["catalog"]["code"], 0, report["catalog"])
         catalog = json.loads(report["catalog"]["stdout"])
         self.assertIn("experimental", json.dumps(catalog))
-        for key in ("nested", "mutation"):
+        self.assertEqual(report["skills"]["code"], 0, report["skills"])
+        self.assertEqual(json.loads(report["skills"]["stdout"])["skills"][0]["name"], "github-context")
+        self.assertEqual(report["skill"]["code"], 0, report["skill"])
+        self.assertIn("name: skill-discovery", report["skill"]["stdout"])
+        for key in ("nested", "answer", "mutation"):
             self.assertEqual(report[key]["code"], 2, report[key])
             self.assertIn("worker", report[key]["stderr"].casefold())
         self.assertFalse(report["created"])

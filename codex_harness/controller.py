@@ -37,6 +37,21 @@ def _save(path, value):
     temporary.replace(path)
 
 
+def _startup_permission_denied(prepared, events, log):
+    """Recognize only the observed exec startup failure, never a later tool error."""
+    if (prepared.get("transport") != "exec" or prepared.get("returncode") != 1
+            or prepared.get("completed") or prepared.get("reason") or events
+            or prepared.get("usage") is not None or prepared.get("message")):
+        return False
+    try:
+        with Path(log).open("rb") as source:
+            text = source.read(64_000).decode("utf-8", errors="replace")
+    except OSError:
+        return False
+    expected = "Error: failed to initialize in-process app-server client: Operation not permitted (os error 1)"
+    return expected in text.splitlines()
+
+
 def prepare(args):
     # Share policy, pack and MCP resolution with the explicit native launcher.
     from .session import prepare as resolve
@@ -63,6 +78,7 @@ def prepare(args):
         raise ValueError("Dollar budgets require explicit prices for the preparation/operator model")
     preview = plan["preview"]
     preview.update({"mode": "managed", "workflow": "enforced_controller", "prompt_routing": "controller",
+                    "prompt_hook": {"requested": False, "status": "not_applicable"},
                     "harness_enforced": True, "inherits_codex_configuration": False,
                     "streaming": not getattr(args, "no_stream", False),
                     "transport": "exec" if getattr(args, "no_stream", False) else "app-server",
@@ -345,6 +361,15 @@ def execute_turn(plan, request=None, task_file=None, patch_only=False, history=N
             account(spent, prepared)
             if prepared.get("reason") or prepared.get("returncode") or not prepared.get("completed"):
                 receipt.update(status=prepared.get("reason") or "preparation_failed", reason=f"Read-only preparation failed; no coding run started. Inspect {prep_folder / 'events.log'} for connection or model errors.")
+                if _startup_permission_denied(prepared, events, prep_folder / "events.log"):
+                    prepared["failure_kind"] = "startup_permission_denied"
+                    receipt["reason"] = (
+                        "Codex startup was denied by the host (Operation not permitted); no coding run started. "
+                        "If host policy permits, request approval to retry the same SuperCodex command through "
+                        "the host's normal permission flow. Preserve the child Codex sandbox and approval settings; "
+                        "do not bypass them or retry after approval is denied. If approval is unavailable, report "
+                        f"the blocked request. Inspect {prep_folder / 'events.log'} for the startup error."
+                    )
                 return receipt
             if git(workspace, "status", "--porcelain") or git(workspace, "rev-parse", "HEAD").decode().strip() != preparation_base:
                 receipt.update(status="integrity_failed", reason="Preparation modified its read-only snapshot; no coding run started")

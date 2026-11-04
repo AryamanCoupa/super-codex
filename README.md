@@ -4,11 +4,11 @@
 
 SuperCodex wraps the Codex CLI in a local engineering and evaluation harness. Give it a task, a repository, and executable acceptance checks. It produces a verified patch, a complete run record, and evidence for improving your next run.
 
-Run **`sc`** or **`supercodex`** to open native Codex with SuperCodex's operator skill, a catalog of bundled skills and any selected task pack. The `skill-discovery` workflow tells Codex to check the skills available in the session and bundled catalog for each new task, read the relevant instructions, then work directly with its normal web, MCP, editing and testing tools. Its layout, streaming, authentication and permissions stay native.
+Run **`sc`** or **`supercodex`** to open native Codex with SuperCodex's operator skill, twelve task skills and any selected task pack. A session-local prompt hook tells Codex to run each submitted request through `super-codex answer` and inspect its receipt. The hook saves the exact prompt in a private file, preserving quotes and multiline text. The native terminal layout, authentication and permission controls remain in place.
 
-The default is skill-driven: research does not spawn a second Codex process, and there is no forced per-message `answer` command or routing hook. Coding skills emphasize scoped changes, meaningful checks and honest results. Use **`sc --managed`**, `answer` or `run` explicitly when you want isolated execution, accounting and receipts.
+Skill discovery remains part of the workflow: select relevant guidance, read it, then apply it during the task. Use **`sc --no-prompt-hook`** for skills-only work with native tools, or **`sc --managed`** for the controller's own interface. The default hook injects routing instructions; a completed command and receipt establish that execution actually happened. The outer Codex interface streams normally, while the delegated `answer` command currently uses buffered exec output.
 
-This describes the **unreleased 0.5.4 development build** on `main`. The release links below still install 0.5.0, whose default is the managed controller. Install this checkout with `pipx install --force .` to test 0.5.4, then restart `sc`. Skill instructions guide the model; they do not guarantee accuracy or replace execution evidence.
+This describes the **unreleased 0.5.5 development build**. The release links below still install 0.5.0, whose default is the managed controller. Install this checkout with `pipx install --force .` to test 0.5.5, then restart `sc`. Skill instructions guide the model; they do not guarantee accuracy or replace execution evidence.
 
 Independent community project. Not affiliated with or endorsed by OpenAI. “Super” describes the goal; improved accuracy and lower cost must be demonstrated on your tasks.
 
@@ -60,11 +60,11 @@ sc
 supercodex "Fix the pagination bug and verify the edge cases"
 ```
 
-The [setup guide](docs/INSTALLATION.md) covers prerequisites, release and source-archive installation, local development builds, upgrades and troubleshooting. The [maintainer guide](docs/RELEASING.md) explains publishing new versions. The package is not published to PyPI. The following mode selectors describe 0.5.4; install the local checkout to try them.
+The [setup guide](docs/INSTALLATION.md) covers prerequisites, release and source-archive installation, local development builds, upgrades and troubleshooting. The [maintainer guide](docs/RELEASING.md) explains publishing new versions. The package is not published to PyPI. The following mode selectors describe 0.5.5; install the local checkout to try them.
 
 ```bash
 sc --repo /path/to/project --config architect
-# Optional managed requests:
+# Direct managed requests:
 sc answer "Research this question"
 sc answer --prompt-file /path/to/message.txt --context-file /path/to/context.txt
 sc --pack frontend --mcp playwright "Fix the checkout interaction"
@@ -72,6 +72,7 @@ sc --managed "Fix the pagination bug and verify its contract"
 sc --managed --task /path/to/task.json --patch-only
 sc --managed --research-mcp github "Find repositories matching my query"
 sc --dry-run                       # preview only, no model call or files
+sc --no-prompt-hook                 # skills-only native work, no per-message routing
 sc skills                          # bundled skill names, descriptions and paths
 sc skills --search "GitHub repositories" # find bundled guidance by task keywords
 sc skills github-context           # read one skill without a model call
@@ -81,9 +82,9 @@ sc --native                        # explicit alias for the default Codex interf
 sc --managed --no-stream            # enforced controller, buffered compatibility transport
 ```
 
-The native operator inherits Codex configuration and receives names, descriptions and absolute paths for all bundled skills. `skill-discovery` guides selection from that catalog and the skills already available in the session. `sc skills --search "task keywords"` searches bundled names and descriptions only; it makes no model call and does not search or install third-party skills. The operator reads the selected files and completes the task with native tools; ordinary questions and coding requests do not need a child model or harness receipt. Explicit managed runs retain their own budgets and evidence, separate from native operator inference. No SuperCodex hook is registered, and `--no-prompt-hook` is a deprecated compatibility no-op. See [skills, optional workflows and evidence](docs/AGENT_USAGE.md#run-with-sc).
+The native operator inherits Codex configuration and receives names, descriptions and absolute paths for bundled skills. `sc skills --search "task keywords"` searches bundled metadata without model calls or third-party installation. Default sessions register only the owned hook with exact session-scoped trust; existing user hooks and global configuration remain unchanged. The hook supplies an `answer --prompt-file` command before each user request, including research and coding. Managed child calls have separately selected tools and budgets; their receipts do not include the outer operator's inference cost. See [routing, skills and evidence](docs/AGENT_USAGE.md#run-with-sc).
 
-For compatibility, `--task`, `--patch-only` and `--no-stream` also select managed mode. They conflict with explicit `--native`; research-specific flags require managed mode. Use `sc --managed "TASK"` for noninteractive execution.
+For compatibility, `--task`, `--patch-only` and `--no-stream` also select managed mode. They conflict with explicit `--native`. Research flags can configure delegated requests in the default hooked session or be passed directly to `answer` and `--managed`; they cannot be used with `--no-prompt-hook`. Use `sc --managed "TASK"` or `sc answer "TASK"` for noninteractive execution.
 
 From this repository:
 
@@ -96,7 +97,7 @@ python3.11 -m venv .venv
 
 The default demo is **offline simulation**, makes no model calls, and deliberately fails once before repairing three tiny tasks. It verifies orchestration, not model quality. Every demo needs a new output directory; existing artifacts are never overwritten.
 
-No-install alternative: `python3.11 -m codex_harness demo` from this checkout. After installation, `sc`, `supercodex`, `super-codex` and `ch` are equivalent commands. In 0.5.4, invoking them without a subcommand opens the native Codex interface; a quoted task becomes its initial request. Use `sc --managed "TASK"` for a controller-owned single task, including noninteractive execution. Examples below assume the virtual environment is activated.
+No-install alternative: `python3.11 -m codex_harness demo` from this checkout. After installation, `sc`, `supercodex`, `super-codex` and `ch` are equivalent commands. In 0.5.5, invoking them without a subcommand opens the native Codex interface; a quoted task becomes its initial request. Use `sc --managed "TASK"` for a controller-owned single task, including noninteractive execution. Examples below assume the virtual environment is activated.
 
 For ordinary Codex sessions launched without `sc`, install the operator skill across your projects:
 
