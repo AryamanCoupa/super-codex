@@ -1,11 +1,11 @@
 ---
 name: economical-delegation
-description: Select direct work, bounded smaller-model delegation or stronger reasoning from task difficulty and observed evidence, while controlling total cost and checking results.
+description: Choose useful multi-agent work, bounded smaller-model delegation or stronger reasoning from task difficulty and observed evidence, while controlling total cost and checking results.
 ---
 
 Begin with the current session and the simplest method that can satisfy the task. Do not spawn a model just to wrap a tool call, repeat a known answer or access tools already connected here. Respect the user's model choices and budget. When model selection is unavailable, do not pretend a cheaper model was used.
 
-Delegate only when the subtask is bounded, has a clear input/output contract and can be checked by the coordinator. Good candidates include independent file inspection, extracting facts from specified sources, a narrowly scoped repair with tests or reviewing a separate failure risk. Provide the relevant context and constraints, not the entire conversation. Assign file ownership or read-only scope so workers do not overwrite each other.
+Use multi-agent work when subtasks are bounded, have clear input/output contracts and can be checked by the coordinator. Good candidates include independent file inspection, extracting facts from specified sources, a narrowly scoped repair with tests or reviewing a separate failure risk. If it adds value and delegation tools are available, actually assign the work, collect the results and integrate verified findings. Provide the relevant context and constraints, not the entire conversation. Assign file ownership or read-only scope so workers do not overwrite each other.
 
 Parallelize independent work when the expected benefit exceeds coordination and duplicated-context cost. Keep one owner for integrating edits, reconciling conflicting evidence and running final checks. Avoid several workers producing the same uncheckable answer; majority agreement does not establish correctness. Count all candidates, failed attempts, verification and coordinator effort when comparing cost.
 

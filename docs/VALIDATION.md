@@ -1,8 +1,18 @@
 # Validation and requirement audit
 
-Validation recorded 2026-11-05, with current local 0.5.5 and historical release results distinguished below. Local platform: macOS arm64, Python 3.11.0, Git 2.50.1, Codex CLI 0.164.0. CI covers macOS/Linux and Python 3.11/3.13, with a separate upstream GEPA integration job. Public CI and release outcomes are recorded in [GitHub Actions](https://github.com/AryamanCoupa/super-codex/actions). The live smoke tests establish execution wiring, not a model-quality comparison.
+Validation recorded 2026-11-05, with current local 0.5.6 and historical release results distinguished below. Local platform: macOS arm64, Python 3.11.0, Git 2.50.1, Codex CLI 0.164.0. CI covers macOS/Linux and Python 3.11/3.13, with a separate upstream GEPA integration job. Public CI and release outcomes are recorded in [GitHub Actions](https://github.com/AryamanCoupa/super-codex/actions). The live smoke tests establish execution wiring, not a model-quality comparison.
 
-## Local 0.5.5 restored routing with skills
+## Local 0.5.6 native skill reminders
+
+All **360 tests passed** in 100.631 seconds, including the optional upstream GEPA contract. The wheel and source archive passed strict metadata checks, and all 69 packaged code/asset files matched the checkout.
+
+Default `sc` now delivers task-relevant skill guidance to the current Codex session. The hook selects at most three keyword candidates plus discovery/verification entry points, without invoking a model, copying the prompt or reading transcripts. The native model chooses, reads and applies relevant skills with its current tools. Managed answer routing is an explicit `--prompt-hook answer` option; `--prompt-hook off` and `--no-prompt-hook` retain bootstrap guidance alone.
+
+Sixty-six focused checks passed for session modes, native terminal handling, hook behavior, answer execution, worker awareness, catalog discovery and operator installation. They cover task-specific suggestions, bounded metadata, no user-prompt interpolation, no prompt files or nested jobs, nonblocking malformed input, visible registration failure fallback, isolation from foreign imports, preserved permissions and exact trust for the owned hook. Explicit answer mode retains its previous receipt and failure requirements.
+
+A separate test with the actual Codex binary and a local Responses fixture completed two turns. The debugging request received the debugging skill path, the news request received the research skill path, and each received selection guidance. No raw prompt was inserted into developer guidance, no prompt files were created and no external model calls were made. This establishes native hook delivery and task-specific suggestions, not live model compliance or measured accuracy gains.
+
+## Historical local 0.5.5 restored routing with skills
 
 All **350 tests passed** in 99.542 seconds, including the optional upstream GEPA contract. The wheel and source archive passed strict metadata checks, and all 68 packaged code/asset files matched the checkout.
 

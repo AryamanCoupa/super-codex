@@ -9,12 +9,12 @@ The public repository is [AryamanCoupa/super-codex](https://github.com/AryamanCo
 1. Push the code, including `.github/workflows/release.yml`, to this repository. For a fork, set `origin` to your fork URL; if `origin` already exists, use `git remote set-url origin URL` instead of adding it again.
 2. When publishing a fork, update the repository URLs in the README, installation guide and `pyproject.toml`. Keep the Python distribution name `super-codex-harness` unless you deliberately rename it and update asset examples.
 3. Confirm GitHub Actions is enabled and repository policy permits the release job's `contents: write` permission. The workflow uses GitHub's generated token; no personal access token or PyPI credential is required for GitHub Releases.
-4. Ensure `pyproject.toml` and `codex_harness/__init__.py` contain the same version. They currently specify `0.5.5`. Commit the changes, then publish that exact version tag:
+4. Ensure `pyproject.toml` and `codex_harness/__init__.py` contain the same version. They currently specify `0.5.6`. Commit the changes, then publish that exact version tag:
 
 ```bash
 git push origin main
-git tag -a v0.5.5 -m "SuperCodex 0.5.5"
-git push origin v0.5.5
+git tag -a v0.5.6 -m "SuperCodex 0.5.6"
+git push origin v0.5.6
 ```
 
 Pushing a `v*` tag triggers the release workflow. Only stable `vMAJOR.MINOR.PATCH` tags are accepted; the tag must match both version declarations. The workflow runs the offline tests with the optional GEPA contract installed, builds wheel/source distributions, checks package metadata, installs the wheel into a fresh environment outside the checkout, exercises launch previews and the offline demo, and then publishes the release.
@@ -24,15 +24,15 @@ The build job has read-only repository access. Only the separate publish job rec
 The release contains:
 
 ```text
-super_codex_harness-0.5.5-py3-none-any.whl
-super_codex_harness-0.5.5.tar.gz
+super_codex_harness-0.5.6-py3-none-any.whl
+super_codex_harness-0.5.6.tar.gz
 SHA256SUMS
 ```
 
 After the workflow succeeds, the user-facing installation is:
 
 ```bash
-pipx install "https://github.com/AryamanCoupa/super-codex/releases/download/v0.5.5/super_codex_harness-0.5.5-py3-none-any.whl"
+pipx install "https://github.com/AryamanCoupa/super-codex/releases/download/v0.5.6/super_codex_harness-0.5.6-py3-none-any.whl"
 pipx ensurepath
 ```
 
@@ -44,7 +44,7 @@ Use a Python 3.11+ environment. The following builds packages locally and does n
 
 ```bash
 python -m pip install build twine '.[gepa]'
-python scripts/check_release.py --tag v0.5.5
+python scripts/check_release.py --tag v0.5.6
 python -m unittest discover -s tests -v
 python -m build
 python -m twine check --strict dist/*.whl dist/*.tar.gz

@@ -1,8 +1,8 @@
 # Use SuperCodex skills from any project
 
-In the unreleased **0.5.5 development build**, `sc` / `supercodex` opens native Codex with SuperCodex's operator skill, twelve task skills and any selected task pack. A session-local UserPromptSubmit hook supplies a concrete `answer --prompt-file` command for each user message. The operator must execute it and inspect its receipt before reporting the result. Quotes, Unicode and multiline text are preserved in a private prompt file; the text is not interpolated into a shell command. `sc --no-prompt-hook` explicitly selects skills-only work with native tools.
+In the unreleased **0.5.6 development build**, `sc` / `supercodex` opens native Codex with SuperCodex's operator skill, twelve task skills and any selected task pack. A lightweight UserPromptSubmit hook suggests up to three bundled skills from the message's keywords and tells the current model to read and apply relevant instructions. Research uses native web/MCP connections; coding can inspect, edit and check changes directly. This default hook starts no model, saves no per-turn prompt copies and requires no managed receipt.
 
-The hook delivers instructions rather than mechanically forcing the model to call a tool. An actual command result and receipt establish execution; hook registration, skill loading or command discovery alone does not. Skills remain available to guide scoped work, current sources and meaningful verification. `--managed`, `run`, evaluation and pack commands remain available. Published 0.5.0 starts the managed controller by default and lacks the later mode selectors; install this checkout to try 0.5.5.
+Skills guide behavior rather than enforcing it. They call for scoped work, current sources, meaningful verification and honest reporting. Explicit `answer`, `--managed`, `run`, evaluation and pack commands remain available when their additional orchestration is useful. Published 0.5.0 starts the managed controller by default and does not have the later mode selectors; install the local checkout to try 0.5.6.
 
 ## Run with sc
 
@@ -20,9 +20,11 @@ sc --dry-run
 
 `supercodex`, `super-codex` and `ch` accept the same arguments. No subcommand means `start`. Quote a multiword initial request; if the whole request is an existing command name, use explicit `sc start "run"`. `sc --help` shows command groups, `sc start --help` shows launch options, and `sc --version` reports the installed version.
 
-With no task, Codex reads the private bootstrap and waits; this initialization message is excluded from routing. A quoted request supplied to `sc` is saved separately and routed once after initialization. Later user messages receive their own exact prompt file and bounded recent managed-answer context. The bootstrap preserves selected pack, policy and tool defaults. It also supplies the skill catalog: apply `skill-discovery`, read the smallest relevant set and name the skills actually used. Unchanged instructions already read can be reused. Managed workers use available guidance within their assignment and do not invoke the routing hook or start nested `answer` jobs.
+With no task, Codex reads the private bootstrap and waits. A quoted initial request is handled with relevant skills after initialization. The bootstrap supplies the catalog, selected pack/policy defaults and optional CLI templates; the per-turn hook reinforces skill application on later messages. Its shortlist is only a candidate set: check the broader native and bundled catalogs when needed, read selected instructions and complete the actual task. Already-read unchanged instructions can be reused. Name skills actually applied and report evidence; loading or listing a skill is not task completion.
 
-For research, the delegated request uses its selected research connections, follows supported discovery/search operations and pagination, and cites retrieved sources. The outer native session's connections are not automatically inherited by that child. Research does not require a clean Git checkout. Managed coding requires a clean committed target and checks its candidate independently. In `--no-prompt-hook` mode, research, edits and tests use native tools directly while preserving unrelated work. Report the checks actually run; native checks are not a managed receipt.
+For a defect, `debug-with-evidence` calls for investigating the failure, repairing its cause and verifying behavior. `economical-delegation` covers useful multi-agent work: divide independent subtasks only when it adds value, assign bounded work using available delegation tools and check the results. The hook does not start agents automatically, decide model suitability or prove that a skill was followed.
+
+For research, discover the actual connected tools, use their supported search/read operations, handle pagination and access limits, and cite the retrieved sources. A repository lookup or news question does not need a clean Git checkout or a child Codex process. For coding, preserve unrelated edits, reproduce the issue when practical, make a scoped change, inspect its diff and run meaningful checks. Report exactly what was tested and any remaining uncertainty. A native test result is not a managed-run receipt.
 
 ## Bundled skill coverage
 
@@ -56,7 +58,7 @@ The list includes each skill's name, description and installed path; a name sele
 
 The catalog does not grant permissions or install MCP connections. Existing user instructions, project rules, tool approvals and credentials still apply. No skill can guarantee accuracy or savings; use the reported evidence to assess the result.
 
-## Harness commands
+## Optional harness commands
 
 Discover arguments before running an unfamiliar command:
 
@@ -67,9 +69,9 @@ super-codex commands experimental router train
 super-codex commands pack --json
 ```
 
-Command discovery makes no model calls. Starting `sc` without a request initializes routing and skills but does not run a task. Each later user message routes through one `answer` command. Additional model comparisons, task packs and experiments are selected when they help the task; they are not automatically added to every request.
+Command discovery makes no model calls. Use the managed workflows when the user requests a receipt or isolated verification, when comparing strategies, or when a recurring task needs a reusable pack. Starting `sc` alone does not start those jobs, and the operator should not introduce extra model calls merely because a command exists.
 
-`answer` is the one-request controller entry point used by the hook. It can also be invoked directly for automation:
+`answer` is an explicit one-request controller entry point, useful for automation or a requested managed research receipt:
 
 ```bash
 super-codex answer "Research this question" --repo /path/to/project
@@ -79,7 +81,7 @@ super-codex answer --prompt-file /path/to/message.txt \
 super-codex answer "Find matching repositories" --research-mcp github
 ```
 
-It uses buffered Codex exec and does not open another interactive session. Child answer text becomes available after that process completes; the outer Codex interface still streams its own responses normally. Supply either a quoted prompt or a UTF-8 prompt file. Optional bounded context stays separate from the original request. Questions receive advisory receipts; coding requests pass through the controller's verification gates. An advisory receipt records execution, not proof that every factual claim is correct. `answer --dry-run` previews settings without invoking a model. Default hooked sessions require the supplied command; `--no-prompt-hook` removes this routing requirement.
+It uses buffered Codex exec and does not open another interactive session. Supply either a quoted prompt or a UTF-8 prompt file. Optional bounded context is separate from the original request. Questions receive advisory receipts; coding requests go through the controller's verification gates. An advisory receipt records execution, not proof that every factual claim is correct. `answer --dry-run` previews settings without invoking a model. Default skills mode does not require it; explicit `--prompt-hook answer` makes the supplied command and receipt part of each request's workflow.
 
 ## Enforce a task with the managed controller
 
@@ -104,17 +106,17 @@ Choose a dedicated harness explicitly with `--pack`, or discover candidates with
 
 ## Check the evidence
 
-Private session artifacts live under `~/.local/state/super-codex/sessions/<id>` by default; `--output-root` chooses another location. A hooked session stores its bootstrap, routing configuration, prompt/context files and worker defaults there. Each delegated `answer` creates its own child session and receipt under the supplied answer artifact root. Follow the printed receipt path. Merely opening native Codex or registering the hook does not create a verified-run receipt. Keep session artifacts out of public repositories.
+Private session artifacts live under `~/.local/state/super-codex/sessions/<id>` by default; `--output-root` chooses another location. Native startup stores its bootstrap, worker defaults and hook configuration/status. The default skills hook adds no per-turn prompt/context files or receipts. Explicit answer routing captures exact messages and bounded recent managed-answer context privately; each delegated request writes its own receipt under the supplied artifact root. Follow the printed receipt path. Merely opening Codex or activating a hook does not create a verified-run result. Keep session artifacts out of public repositories.
 
 The receipt distinguishes `harness_run`, `verified` and `applied`. It includes preparation accounting, the run result path and actual stage evidence, combined token/cost completeness, and the task/base commit/patch hash when available. Inspect the referenced run's checks and `accepted.patch` when assessing the result. A command list, selected policy name or model's claim of success is not substitute evidence.
 
 If patch application is interrupted after it starts, `applied` is null and `application_status` is `unknown`: inspect the source's Git status and diff before retrying. A saved `started` application status after an abrupt process termination also needs this inspection.
 
-Capability questions and research answers are advisory, not verified coding outcomes. Default routing uses `answer`, whose research receipts record selected MCP calls with server, tool and completion status without claiming a verified coding run. Skills-only native research has no SuperCodex receipt. An available server name does not prove a lookup happened. Missing tools or authentication should produce a concrete blocked explanation instead of an invented answer. See [research configuration](INTEGRATIONS.md#research-from-any-directory).
+Capability questions and research answers are advisory, not verified coding outcomes. `answer` research receipts say that no coding run was verified and record actual selected MCP calls with server, tool and completion status. Native research is the default and uses ordinary Codex tools directly; it does not generate a SuperCodex receipt. Use `answer` only when a managed research run is useful or requested. An available server name does not prove that a lookup happened. Missing tools or authentication should produce a concrete blocked explanation instead of an invented answer. See [research configuration](INTEGRATIONS.md#research-from-any-directory).
 
 The preparation sandbox is read-only for local commands. Remote MCP permissions are controlled by the server and credentials; a tool allow-list cannot restrict read/write operations hidden behind the same tool name. Use appropriately scoped research connections.
 
-Preparation and the subsequent run share each task's token, dollar and elapsed-time budget. Unknown preparation usage prevents later model stages; a configured dollar limit also needs known prices. Limits are soft at model-stage boundaries because usage arrives after a Codex turn. Each request starts a new task budget: there is no cumulative session-wide financial cap. Receipts retain preparation and run totals. The outer native operator's inference is additional and is not included in child receipts; default routing therefore has coordination overhead as well as the delegated model work.
+Preparation and the subsequent run share each task's token, dollar and elapsed-time budget. Unknown preparation usage prevents later model stages; a configured dollar limit also needs known prices. Limits are soft at model-stage boundaries because usage arrives after a Codex turn. Each new REPL submission starts a new task budget: there is no cumulative session-wide financial cap. Receipts retain combined totals so the preparation call is not hidden from the cost comparison.
 
 ## Native configuration and permissions
 
@@ -123,16 +125,19 @@ sc
 sc --repo /path/to/project --pack backend
 sc --no-alt-screen "Inspect the existing implementation"
 sc --native                         # explicit alias for the default interface
-sc --no-prompt-hook                  # skills-only native work without answer routing
+sc --prompt-hook skills              # default: per-turn skill application reminder
+sc --prompt-hook answer              # opt in to exact-prompt answer routing
+sc --prompt-hook off                 # bootstrap guidance only
+sc --no-prompt-hook                  # alias for --prompt-hook off
 ```
 
 Native mode inherits Codex configuration, login, plugins, skills, MCP servers, sandbox and approvals. A short prompt points to a private bootstrap file; the catalog points to bundled skill files in the installation. Existing higher-priority instructions remain intact. Explicit MCP presets override same-named servers for that session. The launcher does not copy skills into the target checkout or rewrite global Codex configuration.
 
-The 0.5.5 launcher asks the installed Codex app-server to inspect the exact owned hook, without starting a model turn, then supplies its definition and matching trust hash only for this session. Existing user hooks remain present and global settings are unchanged. If inspection cannot establish the expected hook, launch fails visibly instead of silently dropping routing. Explicit `--no-prompt-hook` skips registration and inspection; `--dry-run` starts no hook/model processes and writes no files.
+The default `skills` hook is a lightweight reminder, not a child-task launcher. Registration uses one local app-server inspection without a model turn to validate the exact owned hook and its session-scoped trust hash. User hooks and global settings remain unchanged. If skills-hook registration is unavailable, the launcher visibly warns and continues with bootstrap guidance; runtime reminder errors are also nonblocking and diagnostic. `off` skips registration, while `--dry-run` starts no hook/model process and writes no files. Native permissions and user scope remain in force.
 
-If a delegated request fails with an outer process/sandbox permission error, inspect its receipt and use the host's normal approval flow to retry the same command when allowed. The hook does not grant broader filesystem, network or service access. Never disable sandboxing or approvals to hide a failure, silently answer through native tools, or claim a successful routed result without its actual receipt. When approval is unavailable, report the blocker. Selecting `--no-prompt-hook` is an explicit workflow choice for a new session, not an automatic failure fallback.
+Explicit `--prompt-hook answer` retains exact-prompt routing: each user message receives an `answer --prompt-file` command that the operator must execute and verify through its receipt. The quoted initial task routes once; bootstrap initialization and managed workers are excluded from recursive routing. This mode stops on registration errors and does not silently replace failed requests with native work. It uses buffered child output while the outer Codex UI streams normally. Host permission errors may need the normal approval flow for the same command; never weaken sandbox or approval settings. Its child receipts exclude outer-operator inference cost. Both hook modes deliver instructions, not a guarantee of model compliance.
 
-`--native` cannot be combined with `--managed`. For compatibility, `--task`, `--patch-only` and `--no-stream` select managed mode. `--research-mcp` and `--research-mcp-config` configure the delegated `answer` in a hooked session and can also be passed to `answer` or `start --managed`; `--no-prompt-hook` rejects them. In skills-only mode, native research uses existing connected tools. See the [official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
+`--native` cannot be combined with `--managed`. For compatibility, `--task`, `--patch-only` and `--no-stream` select managed mode. `--research-mcp` and `--research-mcp-config` configure explicit `--prompt-hook answer`, `answer` or `start --managed`; skills/off modes use existing native tools or selected `--mcp` integrations. Native connections are not automatically inherited by a managed child. See the [official configuration reference](https://learn.chatgpt.com/docs/config-file/config-reference).
 
 ## Install the operator skill once
 
@@ -154,7 +159,7 @@ In Codex, ask for example:
 
 > Use $super-codex to fix the pagination bug in this repository. Discover a suitable pack, define meaningful acceptance checks, and run the balanced policy. Write artifacts outside the repository and report the verified patch. Use at most 100,000 tokens; explain any observed overshoot.
 
-The operator skill supplies the catalog, teaches skill selection and honors the current session's routing mode. A default `sc` session requires its hook-supplied command and receipt; installing the skill alone into ordinary Codex does not register a hook. Skills-only work can use native tools directly. The skill also explains task contracts, packs and evaluations. It does not request confirmation merely because a skill is active; actual environment permissions and missing credentials still apply.
+The operator skill supplies the catalog and teaches Codex to read and apply relevant guidance, use native tools, verify changes and report evidence. It respects explicit answer routing when selected and explains managed runs, packs and evaluations. Installing this skill alone does not register a hook. It can perform authorized work without asking for confirmation merely because a skill is active; environment permissions and credentials still apply. Managed commands enforce their own workflows once invoked.
 
 `agent show` prints the rendered skill before installation. Installed skills use an absolute Python/launcher pair, so they do not depend on Codex inheriting your shell alias or activated environment. Keep that installation in place. After moving the checkout, recreating its virtual environment or upgrading, reinstall with `agent install --user --update` (or the same `--repo`). Updates preserve locally edited/unmanaged skills by refusing to overwrite them. The rendered launcher is machine-specific; the packaged source template is portable.
 
@@ -199,7 +204,7 @@ Without installing the package, an absolute launcher also works:
 
 ## Awareness inside managed runs
 
-Every Codex implementation, preparation, planning and review invocation receives the current command inventory, absolute launcher and bundled skill catalog. Skill instructions and full argument help are loaded on demand within that role's task and budget. The adapter saves the exact effective prompt and its hashes alongside the event log, and run records include a discovery-context hash. Routing and pack comparisons refuse to silently match new guidance against evidence collected without it.
+Every Codex implementation, preparation, planning and review invocation receives the current command inventory, absolute launcher and bundled skill catalog. Relevant instructions and full argument help are loaded on demand within the assigned task and budget. The adapter saves the effective prompt and hashes alongside the event log, and run records include a discovery-context hash. Routing and pack comparisons refuse to silently match new guidance against evidence collected without it.
 
 The top-level operator can choose and run all applicable workflows. A worker already inside a managed run inherits `SUPERCODEX_WORKER=1`; CLI dispatch allows discovery, reports, inspection, suggestions and queries, while refusing `answer`, nested runs, training and mutations that would escape the parent's accounting. Workers can recommend another workflow in their handoff. Accounted delegation uses the top-level `teams`, `best-of-n` or `recursive` commands.
 
