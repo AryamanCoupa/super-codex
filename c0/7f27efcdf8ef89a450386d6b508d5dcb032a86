@@ -1,0 +1,47 @@
+codex_harness/session.py
+  s_69cf76441c36e1::t_a3d8a7e3447b6b 24,41-42
+  s_69cf76441c36e1::t_00e7a0ac5cdc3a 1-23,25-40,43-100,110-114,116-121,123-154
+  s_69cf76441c36e1::t_865641c9961621 101-109,115,122
+pyproject.toml
+  s_69cf76441c36e1::t_00e7a0ac5cdc3a 7,19-20
+README.md
+  s_69cf76441c36e1::t_d18686bead2128 7-8,14,42-63,77,79
+  s_69cf76441c36e1::t_a3d8a7e3447b6b 64
+  s_69cf76441c36e1::t_cd7c7566d4be92 65
+codex_harness/cli.py
+  s_69cf76441c36e1::t_88de38c4af4a68 9,36,138-139,145-149,154-156
+codex_harness/__init__.py
+  s_69cf76441c36e1::t_00e7a0ac5cdc3a 3
+tests/test_session.py
+  s_69cf76441c36e1::t_eb69a484e06a13 1,3-12,14-57,59-65,70-95,99-106,109-141,143-147,149-165,167-205,209-220
+  s_69cf76441c36e1::t_b3374d5774515d 2,13,166
+  s_69cf76441c36e1::t_c74f8e7be551e0 58,66-69,96-98,107-108,142,148,206-208
+docs/ARCHITECTURE.md
+  s_69cf76441c36e1::t_a2cfe70750eabd 7-8
+docs/VALIDATION.md
+  s_69cf76441c36e1::t_1a54779231a342 3,25,29,35-37,83
+docs/AGENT_USAGE.md
+  s_69cf76441c36e1::t_443de0c2fa6327 35
+  s_69cf76441c36e1::t_a3d8a7e3447b6b 31
+  s_69cf76441c36e1::t_865641c9961621 27
+  s_69cf76441c36e1::t_d18686bead2128 3,12-26,28-30,32-34,36-37
+  s_69cf76441c36e1::t_60311fffca393c 38
+tests/test_interactive_dispatch.py
+  s_69cf76441c36e1::t_88de38c4af4a68 1-79
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "c07f27efcdf8ef89a450386d6b508d5dcb032a86",
+  "prompts": {},
+  "sessions": {
+    "s_69cf76441c36e1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a7a5-eeb9-7aa3-93e8-c94ba558a12b",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Aryaman-QA <aryaman.gurjar@coupa.com>"
+    }
+  }
+}
