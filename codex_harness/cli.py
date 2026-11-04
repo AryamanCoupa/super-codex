@@ -137,6 +137,8 @@ def build_parser():
     register_agent_parser(sub)
     from .session import register_parser as register_session_parser
     register_session_parser(sub)
+    from .answer import register_parser as register_answer_parser
+    register_answer_parser(sub)
     return parser
 
 
@@ -151,10 +153,13 @@ def main(argv=None):
     try:
         from .agent_tools import check_worker_command
         check_worker_command(args)
+        if args.action == "answer":
+            from .answer import handle
+            return handle(args)
         if args.action == "start":
             from .session import handle
             return handle(args)
-        if args.action == "agent":
+        if args.action in {"agent", "skills"}:
             from .agent_tools import handle
             return handle(args)
         if args.action == "commands":

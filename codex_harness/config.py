@@ -52,6 +52,8 @@ def load_policy(path=None, pack=None, overrides=None):
         positive(policy["max_cost_usd"], "max_cost_usd")
     if policy.get("local_provider") not in (None, "ollama", "lmstudio"):
         raise ValueError("local_provider must be ollama or lmstudio")
+    if policy.get("web_search") not in (None, "disabled", "cached", "live"):
+        raise ValueError("web_search must be disabled, cached or live")
     if not isinstance(policy["codex_command"], list) or not policy["codex_command"]:
         raise ValueError("codex_command must be a nonempty argv array")
     for name in ("model", "reasoning_effort"):

@@ -85,9 +85,10 @@ class ControllerCLITests(unittest.TestCase):
     def invoke(self, *args):
         launcher = Path(__file__).resolve().parents[1] / "codex_harness/launch.py"
         env = dict(os.environ)
+        env["XDG_CONFIG_HOME"] = str(self.root / "isolated-config")
         env.pop("SUPERCODEX_WORKER", None)
         result = subprocess.run(
-            [sys.executable, str(launcher), *args, "--repo", str(self.repo),
+            [sys.executable, str(launcher), *args, "--no-stream", "--repo", str(self.repo),
              "--config", str(self.policy), "--output-root", str(self.artifacts)],
             cwd=self.root, env=env, text=True, capture_output=True, timeout=45,
         )
@@ -97,7 +98,7 @@ class ControllerCLITests(unittest.TestCase):
         calls = [json.loads(line) for line in self.capture.read_text().splitlines()]
         return result, receipt, calls
 
-    def test_default_prompt_runs_preparation_verifier_and_only_then_applies(self):
+    def test_compatible_no_stream_prompt_runs_preparation_verifier_and_only_then_applies(self):
         result, receipt, calls = self.invoke("Make answer() return 42.")
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertEqual([call["role"] for call in calls], ["prepare", "worker"])

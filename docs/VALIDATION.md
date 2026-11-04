@@ -1,6 +1,36 @@
 # Validation and requirement audit
 
-Validation recorded 2026-11-05 for version 0.5.0, with historical results labeled below. Local platform: macOS arm64, Python 3.11.0, Git 2.50.1, Codex CLI 0.164.0. CI covers macOS/Linux and Python 3.11/3.13, with a separate upstream GEPA integration job. Public CI and release outcomes are recorded in [GitHub Actions](https://github.com/AryamanCoupa/super-codex/actions). The live smoke tests establish execution wiring, not a model-quality comparison.
+Validation recorded 2026-11-05, with current local 0.5.4 and historical release results distinguished below. Local platform: macOS arm64, Python 3.11.0, Git 2.50.1, Codex CLI 0.164.0. CI covers macOS/Linux and Python 3.11/3.13, with a separate upstream GEPA integration job. Public CI and release outcomes are recorded in [GitHub Actions](https://github.com/AryamanCoupa/super-codex/actions). The live smoke tests establish execution wiring, not a model-quality comparison.
+
+## Local 0.5.4 native skills
+
+Validation exercised the 338-test suite. One installation test encountered an intermediate skill example whose first command had changed; the example order was corrected and all eight installation/catalog checks passed against the final template. The 24 focused session, catalog, awareness and command-discovery checks also passed. The wheel/source archive passed metadata validation and all 67 packaged source/asset files matched the final checkout. Installed-package checks confirmed eleven readable skills and native routing without hook overrides.
+
+The default native launch has no SuperCodex prompt hook, app-server preflight or compulsory child-model command. A regression test deliberately makes hook inspection and managed-model construction fail if called; native launch still succeeds and creates no routing or managed-job artifacts. The real controlling-terminal fixture exercises default `sc` without an opt-out flag and retains terminal handles, native configuration and exact initial request text.
+
+The package contains eleven task skills plus the operator skill. Catalog tests check every packaged skill's name, description and readable absolute path, confirm the operator lists them without inlining every body, and exercise `sc skills` and named-skill inspection from another directory, including inside a managed worker. Four new skills cover source-backed research, planning/context, change verification and economical delegation. GitHub discovery guidance now includes initialization, pagination and permission visibility.
+
+The following 0.5.3 routing results are historical. Its forced child request failed during native-session testing with an operating-system permission error before research began; the 0.5.4 default therefore uses the existing native tools directly. `answer`, managed execution and evaluations remain explicit options. This change does not claim that skills alone guarantee model compliance or improve accuracy without measurement.
+
+## Historical local 0.5.3 per-message routing
+
+All **337 tests passed** in 93.225 seconds with optional upstream GEPA available. The wheel and source archive passed metadata checks, and all 63 packaged source/asset files matched the checkout. The package and refreshed operator skill were installed locally; nothing was published.
+
+`answer` real-process tests cover exact quoted/multiline prompts, separate follow-up context, research receipts from non-Git directories, and a coding request through failed baseline, isolated implementation, fresh passing checks and application. Dry runs make no model calls or files, and managed workers cannot recursively invoke `answer`.
+
+The installed Codex binary accepted session-local `UserPromptSubmit` configuration and a scoped trust hash for the exact owned hook. A previously trusted user hook remained present and trusted. A separate two-turn test used the real Codex process with a local Responses fixture: both `ai news` and a quoted multiline follow-up created exact private prompt files, and both model requests contained the developer-context answer command. This test made zero external model calls. It proves per-turn hook delivery; the fixture intentionally does not execute the delegated command, so it is not a live model-compliance benchmark. Actual command execution is established by receipts.
+
+Hook tests also cover bootstrap/worker recursion prevention, bounded context excluding tool payloads and reasoning, symlink rejection, invalid input, timeouts, exact-definition checks and fail-closed errors. Only the owned session hook receives trust; global Codex configuration is unchanged. `--no-prompt-hook` explicitly selects bootstrap-only guidance.
+
+## Local 0.5.2 bootstrap and streaming
+
+All **315 tests passed** in 89.172 seconds on the local platform with optional upstream GEPA available. The local wheel and source archive passed metadata checks; all 61 packaged source/asset files matched the checkout.
+
+The default launcher now uses the native Codex terminal. Its real-process PTY test omits `--native`, verifies inherited terminal input and configuration, and reads the generated bootstrap. Additional tests check explicit `--managed`, compatible managed flags, the exact delegated command with saved policy/pack/MCP settings, and the requirement to inspect receipts. The bootstrap now requires a managed run before source edits and rejects command discovery as evidence of execution. This validates launch wiring and instructions, not a guarantee that a live model will comply with them.
+
+The optional managed streaming transport has deterministic subprocess handshakes: a fixture cannot finish until the parent has displayed its first answer fragment. Other checks cover structured-answer decoding, terminal controls, tool status, UTF-8 boundaries, malformed/regressing usage, interruption, output caps, authentication isolation and verified application. A live small-model advisory request emitted 76 response deltas and 60 answer stdout chunks; the first answer text arrived at 19.392 seconds and the receipt at 20.838 seconds. It used 14,524 tokens, with dollar cost unknown. Native authentication was unchanged.
+
+An existing OAuth-authenticated MCP connection failed initialization in the isolated live transport before a model turn. That limitation is documented; the native default and its delegated `--managed --no-stream` commands preserve the existing Codex authentication path. No release was pushed or published during these local checks. Historical controller results below describe the 0.5.0 default; use `--managed` for that path in 0.5.2.
 
 ## What is implemented
 

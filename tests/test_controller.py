@@ -16,6 +16,9 @@ from codex_harness.runner import git
 
 class ControllerTests(unittest.TestCase):
     def setUp(self):
+        research = patch("codex_harness.controller.resolve_research", return_value={})
+        research.start()
+        self.addCleanup(research.stop)
         self.temp = tempfile.TemporaryDirectory(prefix="supercodex controller ")
         self.root = Path(self.temp.name)
         self.repo = self.root / "source"
@@ -119,6 +122,20 @@ class ControllerTests(unittest.TestCase):
         self.assertEqual(json.loads(Path(receipt["receipt_path"]).read_text()), receipt)
         self.assertEqual(stat.S_IMODE(Path(receipt["receipt_path"]).stat().st_mode), 0o600)
 
+    def test_research_connections_are_separate_from_worker_connections(self):
+        plan = self.plan()
+        plan["research_mcp"] = {"lookup": {"url": "https://example.invalid/read", "enabled_tools": ["search"]}}
+        plan["mcp"] = {"build": {"command": "build-tools"}}
+        adapter, runner = self.advisor(), self.runner()
+        adapter.advise.return_value["events"] = [
+            {"type": "item.completed", "item": {"type": "mcp_tool_call", "server": "lookup", "tool": "search", "status": "completed", "arguments": {"private": "not in summary"}}}]
+        receipt = self.turn(plan, adapter=adapter, run_fn=runner, patch_only=True)
+        self.assertEqual(adapter.advise.call_args.kwargs["mcp"], plan["research_mcp"])
+        self.assertEqual(runner.call_args.kwargs["mcp"], plan["mcp"])
+        self.assertEqual(receipt["research_mcp_names"], ["lookup"])
+        self.assertEqual(receipt["preparation"]["tool_calls"], [{"server": "lookup", "tool": "search", "status": "completed"}])
+        self.assertNotIn("research_mcp", runner.call_args.args[2])
+
     def test_patch_only_flag_and_prepared_user_restriction_prevent_apply(self):
         for by_flag in (True, False):
             with self.subTest(flag=by_flag):
@@ -144,6 +161,86 @@ class ControllerTests(unittest.TestCase):
         self.assertFalse(receipt["harness_run"] or receipt["verified"] or receipt["applied"])
         runner.assert_not_called()
         self.assertEqual(receipt["totals"]["tokens"], 120)
+
+    def uncommitted_source(self, name, initialize=False):
+        self.repo = self.root / name
+        self.repo.mkdir()
+        (self.repo / "private-notes.txt").write_text("Do not copy unrelated directory contents.\n")
+        if initialize:
+            git(self.repo, "init", "-q")
+
+    def test_research_from_nongit_directory_uses_empty_private_workspace(self):
+        self.uncommitted_source("ordinary directory")
+        adapter, runner = self.advisor(kind="answer", apply_patch=False), self.runner()
+        receipt = self.turn(adapter=adapter, run_fn=runner)
+        self.assertEqual(receipt["status"], "advisory")
+        self.assertEqual(receipt["source_context"]["kind"], "not_git")
+        self.assertIsNone(receipt["base_commit"])
+        self.assertFalse(receipt["harness_run"] or receipt["verified"] or receipt["applied"])
+        self.assertEqual(receipt["totals"]["tokens"], 120)
+        runner.assert_not_called()
+        workspace = adapter.advise.call_args.args[2]
+        self.assertNotEqual(workspace, self.repo)
+        self.assertEqual(git(workspace, "ls-files"), b"")
+        self.assertEqual(git(workspace, "rev-parse", "HEAD").decode().strip(), receipt["preparation_base_commit"])
+        self.assertIn("no files from the selected directory were copied", adapter.advise.call_args.args[3])
+        self.assertEqual(list(self.repo.iterdir()), [self.repo / "private-notes.txt"])
+        self.assertEqual((self.repo / "private-notes.txt").read_text(), "Do not copy unrelated directory contents.\n")
+
+    def test_research_from_unborn_git_does_not_create_user_commit(self):
+        self.uncommitted_source("unborn repository", initialize=True)
+        before_head = (self.repo / ".git/HEAD").read_bytes()
+        adapter, runner = self.advisor(kind="answer", apply_patch=False), self.runner()
+        receipt = self.turn(adapter=adapter, run_fn=runner)
+        self.assertEqual(receipt["status"], "advisory")
+        self.assertEqual(receipt["source_context"]["kind"], "unborn")
+        self.assertIsNone(receipt["base_commit"])
+        runner.assert_not_called()
+        self.assertEqual((self.repo / ".git/HEAD").read_bytes(), before_head)
+        self.assertFalse((self.repo / ".git/index").exists())
+        with self.assertRaises(RuntimeError):
+            git(self.repo, "rev-parse", "--verify", "HEAD^{commit}")
+        self.assertEqual(git(adapter.advise.call_args.args[2], "ls-files"), b"")
+
+    def test_prepared_coding_task_without_source_commit_has_actionable_block(self):
+        for initialize in (False, True):
+            with self.subTest(git_initialized=initialize):
+                self.uncommitted_source(f"coding directory {initialize}", initialize=initialize)
+                adapter, runner = self.advisor(), self.runner()
+                receipt = self.turn(adapter=adapter, run_fn=runner)
+                self.assertEqual(receipt["status"], "blocked")
+                self.assertIn("--repo /path/to/project", receipt["reason"])
+                self.assertIn("clean, committed Git checkout", receipt["reason"])
+                self.assertNotIn("fatal:", receipt["reason"])
+                self.assertFalse(receipt["harness_run"] or receipt["applied"])
+                self.assertEqual(receipt["totals"]["tokens"], 120)
+                runner.assert_not_called()
+                self.assertTrue((self.repo / "private-notes.txt").is_file())
+
+    def test_explicit_task_without_source_commit_blocks_before_model_preparation(self):
+        file = self.root / "explicit-task.json"
+        file.write_text(json.dumps(self.task))
+        for initialize in (False, True):
+            with self.subTest(git_initialized=initialize):
+                self.uncommitted_source(f"explicit directory {initialize}", initialize=initialize)
+                adapter, runner = self.advisor(), self.runner()
+                receipt = self.turn(adapter=adapter, run_fn=runner, task_file=file)
+                self.assertEqual(receipt["status"], "blocked")
+                self.assertIn("--repo /path/to/project", receipt["reason"])
+                self.assertIsNone(receipt["preparation"])
+                self.assertEqual(receipt["totals"]["tokens"], 0)
+                adapter.advise.assert_not_called()
+                runner.assert_not_called()
+
+    def test_dirty_checkout_still_allows_advisory_on_committed_snapshot(self):
+        (self.repo / "code.py").write_text("pending user work\n")
+        adapter, runner = self.advisor(kind="answer", apply_patch=False), self.runner()
+        receipt = self.turn(adapter=adapter, run_fn=runner)
+        self.assertEqual(receipt["status"], "advisory")
+        self.assertTrue(receipt["source_context"]["dirty"])
+        self.assertEqual((adapter.advise.call_args.args[2] / "code.py").read_text(), "value = 1\n")
+        self.assertEqual((self.repo / "code.py").read_text(), "pending user work\n")
+        runner.assert_not_called()
 
     def test_invalid_response_and_missing_checks_block_before_runner(self):
         invalid_task = {**self.task, "checks": []}

@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 
 from codex_harness.cli import main, pack_path
-from codex_harness.codex import CodexAdapter, command, estimate_cost, parse_events
+from codex_harness.codex import CodexAdapter, command, estimate_cost, parse_events, mcp_override
 from codex_harness.config import ASSETS, load_policy, load_task, read, toml_value
 from codex_harness.demo import CASES, create
 from codex_harness.process import execute
@@ -285,6 +285,23 @@ class UnitTests(unittest.TestCase):
         argv = command(load_policy(), "strong", Path("/tmp"), {}, role="review")
         self.assertEqual(argv[argv.index("--sandbox") + 1], "read-only")
         self.assertIn("--output-schema", argv)
+
+    def test_mcp_cli_key_preserves_server_name_without_literal_quotes(self):
+        value = mcp_override("repo-search", {"url": "https://example.invalid/mcp"})
+        self.assertEqual(value.split("=", 1)[0].split("."), ["mcp_servers", "repo-search"])
+        for invalid in ('"repo-search"', 'repo.search', 'server name'):
+            with self.subTest(name=invalid), self.assertRaisesRegex(ValueError, "MCP server names"):
+                mcp_override(invalid, {})
+
+    def test_progress_commentary_does_not_corrupt_structured_final_response(self):
+        payload = '{"kind":"answer","answer":"Done","task":null,"apply_patch":false}'
+        events = [{"type": "item.completed", "item": {"type": "agent_message", "text": text}}
+                  for text in ("I will inspect the available evidence.", payload)]
+        events.append({"type": "turn.completed", "usage": {"input_tokens": 10, "cached_input_tokens": 0, "output_tokens": 5}})
+        result = parse_events("\n".join(json.dumps(event) for event in events))
+        self.assertEqual(result["message"], payload)
+        self.assertEqual(result["events"], events)
+        self.assertTrue(result["completed"])
 
     def test_preparation_uses_readonly_sandbox_and_packaged_contract_schema(self):
         argv = command(load_policy(), "small", Path("/tmp"), {}, role="prepare")

@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+import re
 import shlex
 import sys
 from pathlib import Path
@@ -42,7 +43,7 @@ def worker_environment():
 def check_worker_command(args):
     if os.environ.get("SUPERCODEX_WORKER") != "1":
         return
-    allowed = args.action in {"commands", "doctor", "report", "mcp"}
+    allowed = args.action in {"commands", "skills", "doctor", "report", "mcp"}
     allowed |= args.action == "pack" and args.pack_action in {"list", "inspect", "suggest"}
     allowed |= args.action == "agent" and args.agent_action == "show"
     if args.action == "experimental":
@@ -54,9 +55,40 @@ def check_worker_command(args):
                          "return this command to the top-level operator. Read-only discovery remains available.")
 
 
+def bundled_skills():
+    """List packaged skill entry points without loading every instruction body."""
+    rows = []
+    for path in sorted((ASSETS / "skills").glob("*/SKILL.md")):
+        lines = path.read_text(encoding="utf-8").splitlines()
+        if not lines or lines[0] != "---" or "---" not in lines[1:]:
+            raise ValueError(f"Bundled skill lacks frontmatter: {path.parent.name}")
+        metadata = {}
+        for line in lines[1:lines.index("---", 1)]:
+            key, separator, value = line.partition(":")
+            if separator and key in {"name", "description"}:
+                value = value.strip()
+                if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+                    value = value[1:-1]
+                metadata[key] = value
+        name, description = metadata.get("name", ""), metadata.get("description", "")
+        if (not re.fullmatch(r"[a-z0-9-]+", name) or name != path.parent.name
+                or not description or description in {"|", ">"}):
+            raise ValueError(f"Bundled skill needs a matching name and single-line description: {path.parent.name}")
+        rows.append({"name": name, "description": description, "path": str(path.resolve())})
+    if not rows:
+        raise ValueError("No bundled skills found; reinstall the SuperCodex package")
+    return rows
+
+
+def skill_catalog_text(rows=None):
+    rows = bundled_skills() if rows is None else rows
+    return "\n".join(f"- {row['name']}: {row['description']}\n  Read: {json.dumps(row['path'])}" for row in rows)
+
+
 def skill_text():
     template = (ASSETS / "operator" / "super-codex" / "SKILL.md").read_text()
-    return template.replace("{{SUPER_CODEX_COMMAND}}", shlex.join(invocation()))
+    return (template.replace("{{SUPER_CODEX_COMMAND}}", shlex.join(invocation()))
+            .replace("{{SUPER_CODEX_SKILLS}}", skill_catalog_text()))
 
 
 def install_skill(destination, *, update=False):
@@ -89,6 +121,9 @@ def install_skill(destination, *, update=False):
 
 
 def register_parser(subparsers):
+    skills = subparsers.add_parser("skills", help="List bundled skills, or read one by name; no model calls")
+    skills.add_argument("name", nargs="?", help="Optional bundled skill name to read")
+    skills.add_argument("--json", action="store_true", help="Print skill metadata as JSON")
     parser = subparsers.add_parser("agent", help="Teach a top-level Codex agent how to operate SuperCodex")
     actions = parser.add_subparsers(dest="agent_action", required=True)
     actions.add_parser("show", help="Print the operator skill with this installation's absolute launcher")
@@ -100,6 +135,19 @@ def register_parser(subparsers):
 
 
 def handle(args):
+    if args.action == "skills":
+        rows = bundled_skills()
+        if args.name:
+            rows = [row for row in rows if row["name"] == args.name]
+            if not rows:
+                raise ValueError("Unknown bundled skill; run skills to list available names")
+        if args.json:
+            print(json.dumps({"skills": rows}, indent=2))
+        elif args.name:
+            print(Path(rows[0]["path"]).read_text(encoding="utf-8"))
+        else:
+            print(skill_catalog_text(rows))
+        return 0
     if args.agent_action == "show":
         print(skill_text())
         return 0

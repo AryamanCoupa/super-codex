@@ -1,36 +1,39 @@
 ---
 name: super-codex
-description: Operate the local SuperCodex harness when asked to run a coding task through it, choose a dedicated task pack, compare model cost and accuracy, or improve a reusable harness from verified evidence.
+description: Use focused SuperCodex skills for native research, coding and verification; select optional task packs, managed runs or experiments when they help the request.
 ---
 
-Use the installed CLI as the execution interface. It works from any directory using this exact launcher; preserve quoting:
+Work in the current Codex session with its existing tools, authentication, context and permissions. Choose the relevant skills below and complete the user's request directly. Research can use connected MCP tools or browsing; coding can use native editing and meaningful checks. An `answer` command, another model process, a clean Git commit or a managed receipt is not a prerequisite for ordinary work. Do not route every message through a child CLI or wait for a wrapper before using an available tool.
+
+Read the smallest relevant set of skill files when needed. The catalog gives the exact installed paths; do not assume the current working directory contains the package. Read any selected task pack's instructions as well. A skill provides a procedure, not credentials or permission to perform unrelated actions.
+
+{{SUPER_CODEX_SKILLS}}
+
+For research, start with `research-with-sources` and the relevant service skill. Use the user's selected connection and its advertised discovery/initialization tools. Search and follow pagination before claiming a complete inventory; distinguish inaccessible results from absent results. Give concrete findings with source links, and state retrieval limits. If one optional harness command fails, the existing native tools remain available within the user's scope. Explain a real authentication or permissions failure without inventing findings or weakening permission settings.
+
+For coding, inspect repository instructions and the current diff first. Use `plan-and-context` for scope, `debug-with-evidence` for a defect, and `verify-changes` before completion. Native edits are allowed when the user asks for a change. Preserve unrelated and concurrent work, make the smallest coherent change, and verify the behavior that matters. Report the actual checks and their outcomes; do not claim a managed run or receipt when only native tools ran. Git cleanliness requirements belong to particular managed commands, not to ordinary research or all native edits.
+
+Use `browser-verify` when a browser interaction or appearance is part of acceptance. Use `economical-delegation` before choosing extra agents or a stronger model. A small task may need one direct tool call and no plan or delegation. Do not load every skill, spawn workers for every question, or apply every available research technique to a single task.
+
+The CLI remains available when the user asks for its workflow or the task benefits from isolated verification, measured model comparisons, repeated task packs or durable run artifacts. Discover the relevant command before choosing flags:
 
 ```bash
 {{SUPER_CODEX_COMMAND}} commands
+{{SUPER_CODEX_COMMAND}} skills
+{{SUPER_CODEX_COMMAND}} skills github-context
+{{SUPER_CODEX_COMMAND}} commands run
+{{SUPER_CODEX_COMMAND}} commands pack
+{{SUPER_CODEX_COMMAND}} experimental list
 ```
 
-Start with the compact `commands` list, then inspect the relevant leaf with `commands run` or `commands experimental best-of-n`. Append `--json` when structured argument metadata is useful. The complete `commands --json` catalog is available for automation but is large; avoid loading it all into routine model context. Discover live commands before choosing flags, so upgrades do not leave you using a stale reference. Discovery makes no model calls.
+`skills` lists the bundled catalog and `skills NAME` reads one complete skill without a model call. Load individual command help rather than the complete JSON command catalog unless automation needs it. Discovery is not evidence that the user's task was completed. Preserve the bootstrap's repository, policy, pack, tool and output defaults when selecting a CLI workflow; do not silently change budgets.
 
-For an ordinary coding request, use the default controlled entry point (`start "TASK" --repo REPO`) or provide a reviewed contract (`start --task TASK_FILE --repo REPO`). It performs preparation, a verified run, and checked application; add `--patch-only` when the user wants a patch for review. The controller will stop on missing checks, invalid preparation or insufficient accounting rather than fall back to direct edits. `--native` is an explicitly advisory Codex interface and cannot enforce harness use. A skill loaded into an ordinary Codex session is also guidance, not execution enforcement.
+`answer "PROMPT"` is an optional noninteractive managed request. `start --managed --no-stream --task TASK_FILE --repo REPO --config WORKER_POLICY` uses an explicit coding contract and the existing exec authentication path. `run` returns a patch for review; the managed controller can apply a passing patch after source/base checks. Use these only when selected for the task, not as a mandatory prelude to research or native editing. Their source-state, authentication and budget requirements still apply. Do not discard or commit unrelated changes to satisfy them. If the user explicitly requested enforced execution, a blocked run must be reported rather than silently relabeled as a native success.
 
-Act as the top-level operator within the user's task and spending constraints. Inspect the target repository and define a task JSON with a concrete prompt, executable `checks` as argv arrays, and protected tests. Use `baseline_must_fail` for a regression whose original code should fail. Resolve task, repository, pack, suite and artifact paths explicitly; checks execute inside disposable clones. The source must be a clean committed Git checkout. Do not discard or commit unrelated user changes to make it clean.
+When creating a managed task, specify a concrete prompt, executable check commands as argv arrays, protected tests and any required setup. Check that tests collect meaningful assertions. For a regression, use `baseline_must_fail` when the original behavior should fail. Inspect the resulting receipt, checks and patch before claiming managed success; distinguish `harness_run`, `verified` and `applied`. Unknown usage or prices stay unknown. Native operator inference is separate from managed-run accounting.
 
-Minimal task shape (replace the prompt and check with this repository's actual acceptance criteria):
+For recurring task families, use `pack list`, `pack inspect` and `pack suggest` to discover a reusable harness. `evaluate-harness` and `curate-learning-data` cover development evidence, fresh holdouts and promotion. `select-experiment` covers optional parallel candidates, learned routing, retrieval, ACE/GEPA, recursion and local fine-tuning. Change one method at a time and count failed attempts and tuning spend. Availability of a technique does not mean it ran or improved this result.
 
-```json
-{"id":"scoped-fix","prompt":"Describe the required behavior and boundaries.","checks":[["{python}","-m","unittest","discover","-s","tests"]],"protected_paths":["tests"],"baseline_must_fail":false}
-```
+When initialization provides no user task, say the session is ready and wait. When it includes a request, choose the relevant skills and do the work; merely reading the bootstrap or listing commands does not complete it.
 
-Check that the command runs meaningful assertions, not an empty test collection. Optional `setup` uses the same list-of-argv-arrays format for reproducible dependencies. `{python}` is the harness interpreter. A JSON/TOML policy passed with `--config` can set `max_tokens`, `max_cost_usd` and `run_timeout_seconds`; token/dollar limits are soft between model stages. For preset-specific overrides, inspect its packaged TOML before creating a custom policy; do not invent undocumented command-line flags.
-
-Use `pack list`, `pack inspect` and `pack suggest` to discover a suitable dedicated harness, then use it with `start --task TASK --repo REPO --pack PACK`, or with the lower-level `run TASK --repo REPO --pack PACK --output OUTPUT`. An output directory outside the source keeps generated artifacts separate. Use actual checks for this repository; copied sample commands are not acceptance criteria. Use the controller receipt, `report` and saved result/check/patch artifacts to assess completion. A passed patch remains in `accepted.patch`. The controller applies it only after source/base checks unless `--patch-only` was selected; lower-level `run` leaves the source unchanged. After application, the user must review and commit intended changes before another coding run. Never commit or discard unrelated work to make the source clean.
-
-Report what actually ran: preparation, worker attempts, deterministic checks, configured planning/review, repairs or escalation, and whether the patch was applied. Listing commands or describing capabilities does not establish harness execution. Advisory research answers are not verified coding runs. Do not claim all available techniques were used or that quality/cost improved without measured comparison. Preparation and execution share a per-task budget in the controller; native operator spending remains outside child-run accounting.
-
-For recurring task families, use `pack create` and the measured `learn`/`propose`/`optimize`/`promote` lifecycle, with separate development and holdout tasks. Registry release, inspection and rollback commands are discoverable in `commands pack`. Keep the active pack unless its candidate meets the gates. Do not weaken checks or reuse development answers as holdouts.
-
-For an observed failure that warrants more computation, inspect `experimental list` and the chosen command's help. Select independent candidates for verifiable alternatives; specialists or recursion for separable questions; routing and memory when matched verified data exists; ACE/GEPA for reusable guidance; local fine-tuning only with suitable data and compute. Count all attempts and optimization spend, treat unknown cost as unknown, and add one method at a time. Optional dependencies may need installation before GEPA or training can execute. Do not enable every experiment for every task.
-
-Select MCP presets and custom configurations only when relevant. `mcp` prints configuration; it does not authenticate or connect services. Follow the user's authorization for external actions. Command discovery itself does not grant permissions or spending authorization. An explicitly requested run can proceed without asking for permission again merely because this skill is active.
-
-If `SUPERCODEX_WORKER=1` is inherited, you are already inside a managed run. Use read-only discovery and diagnostics; return proposed additional runs or changes to the parent in your handoff. Do not start nested model jobs or clear the marker: their spending would escape the parent accounting. Use the top-level experimental commands for accounted delegation.
+If `SUPERCODEX_WORKER=1` is inherited, you are already inside a managed run. Follow its assigned contract and budget. Native tools needed for that assignment remain usable within their permissions, but do not invoke `answer`, start nested model jobs, mutate task packs, or clear the marker. Read-only CLI discovery and diagnostics are allowed; return proposed additional runs or experiments to the parent in your handoff.

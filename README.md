@@ -4,14 +4,19 @@
 
 SuperCodex wraps the Codex CLI in a local engineering and evaluation harness. Give it a task, a repository, and executable acceptance checks. It produces a verified patch, a complete run record, and evidence for improving your next run.
 
-Run **`sc`** or **`supercodex`** to start the SuperCodex controller. Coding requests go through task preparation, isolated execution, independent verification, and a saved receipt. The controller applies only a passing patch to a clean checkout at the original commit. Use `--patch-only` to keep the result for review.
+Run **`sc`** or **`supercodex`** to open native Codex with SuperCodex's operator skill, a catalog of bundled skills and any selected task pack. Codex chooses the relevant guidance and works directly with its normal web, MCP, editing and testing tools. Its layout, streaming, authentication and permissions stay native.
+
+The default is skill-driven: research does not spawn a second Codex process, and there is no forced per-message `answer` command or routing hook. Coding skills emphasize scoped changes, meaningful checks and honest results. Use **`sc --managed`**, `answer` or `run` explicitly when you want isolated execution, accounting and receipts.
+
+This describes the local **unpublished 0.5.4 development build**. The release links below still install 0.5.0, whose default is the managed controller. Install this checkout with `pipx install --force .` to test 0.5.4, then restart `sc`. Skill instructions guide the model; they do not guarantee accuracy or replace execution evidence.
 
 Independent community project. Not affiliated with or endorsed by OpenAI. “Super” describes the goal; improved accuracy and lower cost must be demonstrated on your tasks.
 
 ## What you get
 
 - **Four strategies:** economy, selective escalation, strong planner + small implementer, and independent review for accuracy.
-- **Controlled entry point:** `sc` enforces the coding workflow and reports actual execution evidence. `--native` explicitly opens an advisory Codex session instead.
+- **Skills in native Codex:** `sc` provides relevant guidance for research, GitHub/Atlassian context, browser work, planning, debugging, verification and economical delegation, plus evaluation and learning workflows. The operator reads skill files on demand.
+- **Enforced execution when selected:** `sc --managed` owns preparation, verification and receipts. Its live transport displays public response text and tool activity; `--managed --no-stream` selects buffered exec for compatibility.
 - **Disposable Git clones:** workers edit isolated copies; candidates are checked in another clean clone before any accepted patch is applied.
 - **Evidence-driven repairs:** bounded retries with failing checks, compact handoffs, and stall detection.
 - **Discoverable task packs:** list, inspect, suggest and create dedicated harnesses with selected instructions, skills, checks, MCP tools and model policy.
@@ -20,6 +25,8 @@ Independent community project. Not affiliated with or endorsed by OpenAI. “Sup
 - **Local reports:** attempts, checks, patches, model usage, cached tokens, estimated cost, latency, and failure classifications.
 - **Opt-in experiments:** parallel candidates and specialists, learned routing, verified experience retrieval, ACE playbooks, upstream GEPA, recursive calls and local LoRA training.
 - **No core runtime Python dependencies.** GEPA and fine-tuning have optional extras. Python 3.11+, Git, and Codex. macOS/Linux; Windows via WSL is unverified.
+
+Explicit managed runs and pack improvement follow this workflow:
 
 ```mermaid
 flowchart LR
@@ -53,19 +60,29 @@ sc
 supercodex "Fix the pagination bug and verify the edge cases"
 ```
 
-The [setup guide](docs/INSTALLATION.md) covers prerequisites, release and source-archive installation, upgrades and troubleshooting. The [maintainer guide](docs/RELEASING.md) explains publishing new versions. The package is not published to PyPI. If you already have this checkout, `pipx install .` still works; developers can use the virtual environment below.
+The [setup guide](docs/INSTALLATION.md) covers prerequisites, release and source-archive installation, local development builds, upgrades and troubleshooting. The [maintainer guide](docs/RELEASING.md) explains publishing new versions. The package is not published to PyPI. The following mode selectors describe 0.5.4; install the local checkout to try them.
 
 ```bash
 sc --repo /path/to/project --config architect
+# Optional managed requests:
+sc answer "Research this question"
+sc answer --prompt-file /path/to/message.txt --context-file /path/to/context.txt
 sc --pack frontend --mcp playwright "Fix the checkout interaction"
-sc --task /path/to/task.json --patch-only
+sc --managed "Fix the pagination bug and verify its contract"
+sc --managed --task /path/to/task.json --patch-only
+sc --managed --research-mcp github "Find repositories matching my query"
 sc --dry-run                       # preview only, no model call or files
+sc skills                          # bundled skill names, descriptions and paths
+sc skills github-context           # read one skill without a model call
 sc commands                        # all harness commands remain available
 sc experimental list
-sc --native                        # advisory native Codex interface
+sc --native                        # explicit alias for the default Codex interface
+sc --managed --no-stream            # enforced controller, buffered compatibility transport
 ```
 
-The controller reuses your Codex login and supplies the selected pack, policy and MCP servers to managed workers. It uses the pack's policy, or `balanced` without a pack; an explicit `--config` overrides it. Read-only preparation and the subsequent run share the task's token, cost and time budget. Missing checks, invalid preparation or unknown preparation usage stop the workflow; there is no fallback to direct editing. Research answers are labeled advisory, and command discovery never counts as a verified run. See [controller behavior and native mode](docs/AGENT_USAGE.md#run-with-sc).
+The native operator inherits Codex configuration and receives names, descriptions and absolute paths for all bundled skills. It reads the relevant files and completes the task with native tools; ordinary questions and coding requests do not need a child model or harness receipt. Explicit managed runs retain their own budgets and evidence, separate from native operator inference. No SuperCodex hook is registered, and `--no-prompt-hook` is a deprecated compatibility no-op. See [skills, optional workflows and evidence](docs/AGENT_USAGE.md#run-with-sc).
+
+For compatibility, `--task`, `--patch-only` and `--no-stream` also select managed mode. They conflict with explicit `--native`; research-specific flags require managed mode. Use `sc --managed "TASK"` for noninteractive execution.
 
 From this repository:
 
@@ -78,7 +95,7 @@ python3.11 -m venv .venv
 
 The default demo is **offline simulation**, makes no model calls, and deliberately fails once before repairing three tiny tasks. It verifies orchestration, not model quality. Every demo needs a new output directory; existing artifacts are never overwritten.
 
-No-install alternative: `python3.11 -m codex_harness demo` from this checkout. After installation, `sc`, `supercodex`, `super-codex` and `ch` are equivalent commands. With no command they open the controller's terminal prompt; a quoted task runs directly. Examples below assume the virtual environment is activated.
+No-install alternative: `python3.11 -m codex_harness demo` from this checkout. After installation, `sc`, `supercodex`, `super-codex` and `ch` are equivalent commands. In 0.5.4, invoking them without a subcommand opens the native Codex interface; a quoted task becomes its initial request. Use `sc --managed "TASK"` for a controller-owned single task, including noninteractive execution. Examples below assume the virtual environment is activated.
 
 For ordinary Codex sessions launched without `sc`, install the operator skill across your projects:
 
@@ -87,7 +104,7 @@ super-codex agent install --user
 super-codex commands
 ```
 
-Then ask Codex to use `$super-codex` for your task. A project-only installation uses `agent install --repo /path/to/project`. This skill provides guidance in ordinary Codex; the default `sc` controller provides enforced orchestration. Managed workers automatically receive CLI discovery context. The [agent and cross-directory guide](docs/AGENT_USAGE.md) explains installation, command selection, paths and accounted delegation.
+Then ask Codex to use `$super-codex` for your task. A project-only installation uses `agent install --repo /path/to/project`. The default `sc` launch loads current packaged guidance without requiring this separate skill installation. Skills and bootstrap instructions guide the native operator; `sc --managed` enforces orchestration. Managed workers automatically receive CLI discovery context. The [agent and cross-directory guide](docs/AGENT_USAGE.md) explains installation, command selection, paths and accounted delegation.
 
 For a live smoke run with your existing Codex authentication:
 
@@ -121,7 +138,7 @@ super-codex run task.json --repo /path/to/clean-repo \
 
 The repository must have a commit and a clean working tree. Only committed files are cloned. Checks and optional `setup` commands are argv arrays; they run in the cloned repository. `{python}` means the invoking interpreter. For third-party dependencies, create a reproducible local environment in `setup` and use its interpreter in checks. Setup executes for the worker and each clean verifier. Review these commands before running someone else's task.
 
-`sc --task /absolute/path/to/task.json --repo /path/to/clean-repo` uses this contract without a model preparation call and applies a successful patch after source checks. Add `--patch-only` to leave the source unchanged. After applying a patch, commit your intended changes before the next coding task; SuperCodex does not commit or discard work automatically. The lower-level `run` command always leaves application to you.
+`sc --managed --task /absolute/path/to/task.json --repo /path/to/clean-repo` uses this contract without a model preparation call and applies a successful patch after source checks. Add `--patch-only` to leave the source unchanged. After applying a patch, commit your intended changes before the next coding task; SuperCodex does not commit or discard work automatically. The lower-level `run` command always leaves application to you.
 
 Run the harness from a separate working directory, or use `--output /path/outside/target/runs`. If output is inside the target repository, it must already be covered by a Git ignore rule; the tool checks this before writing so generated artifacts do not dirty your checkout.
 
@@ -171,7 +188,7 @@ super-codex run task.json --repo /path/to/repo --pack .harness/packs/my-api
 
 `list` also discovers packs under `.harness/packs` and active registries under `.harness/registries`. Use `--root ./other-packs` for another location, or `--json` for structured output. `suggest` explains task/repository matches without a model call; `--from-runs .harness/runs` can flag recurring failures for an experiment. Rankings are heuristics, and you choose the pack explicitly.
 
-Bundled packs: `backend`, `frontend`, and `issue-to-patch`. `create` copies skills and tools but requires real checks from your task; unspecified checks remain incomplete. `pack fork` is still available for an exact editable copy. Edit `instructions.md` for recurring constraints and `pack.toml` for checks, policy and matching hints. Pack skills load only when explicitly listed. Add your own under `skills/<name>/SKILL.md`. Seven bundled skills cover evidence-based debugging, browser verification, GitHub/Atlassian context, evaluation, experiment selection and learning-data curation.
+Bundled packs: `backend`, `frontend`, and `issue-to-patch`. `create` copies skills and tools but requires real checks from your task; unspecified checks remain incomplete. `pack fork` is still available for an exact editable copy. Edit `instructions.md` for recurring constraints and `pack.toml` for checks, policy and matching hints. A pack includes skills explicitly listed in its manifest; add your own under `skills/<name>/SKILL.md`. Separately, native `sc` exposes the full catalog of eleven bundled skills for on-demand selection. See the [skill coverage table](docs/AGENT_USAGE.md#bundled-skill-coverage).
 
 For controlled self-improvement, use a development run produced by that exact pack and a separate holdout suite:
 

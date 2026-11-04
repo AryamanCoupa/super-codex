@@ -204,7 +204,7 @@ class OptimizationTests(unittest.TestCase):
 
     def test_real_runner_with_offline_cli_keeps_equivalent_candidate_inactive(self):
         class OfflineAdapter(Proposer):
-            run = CodexAdapter.run
+            run = CodexAdapter().run
 
         config = self.root / "offline.json"
         save(config, {"model": "simulator", "codex_command": [sys.executable, str(ASSETS / "fake_codex.py")],

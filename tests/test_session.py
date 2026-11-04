@@ -17,7 +17,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from codex_harness.cli import build_parser
-from codex_harness.session import handle, prepare
+from codex_harness.session import handle, prepare, session_output_directory
 
 
 class SessionTests(unittest.TestCase):
@@ -33,7 +33,7 @@ class SessionTests(unittest.TestCase):
         self.temp.cleanup()
 
     def args(self, *extra):
-        return build_parser().parse_args(["start", "--native", "--repo", str(self.repo),
+        return build_parser().parse_args(["start", "--repo", str(self.repo),
                                          "--output-root", str(self.output), *extra])
 
     def test_model_policy_selection_and_independent_operator_override(self):
@@ -118,7 +118,143 @@ class SessionTests(unittest.TestCase):
         self.assertFalse(self.output.exists())
         preview = json.loads(out.getvalue())
         self.assertEqual(preview["repo"], str(self.repo))
+        self.assertEqual(preview["mode"], "native_advisory")
+        self.assertEqual(preview["workflow"], "supercodex_skills")
+        self.assertTrue(preview["inherits_codex_configuration"])
+        self.assertFalse(preview["harness_enforced"])
+        self.assertEqual(preview["prompt_routing"], "native")
         self.assertNotIn(secret, out.getvalue())
+
+    def test_old_no_prompt_hook_flag_is_a_compatibility_no_op(self):
+        previews = []
+        with patch("codex_harness.prompt_hook.hook_overrides", side_effect=AssertionError("Unexpected hook preflight")) as hook, \
+                patch("codex_harness.session.subprocess.call") as launch:
+            for options in ((), ("--no-prompt-hook",)):
+                with contextlib.redirect_stdout(io.StringIO()) as out:
+                    self.assertEqual(handle(self.args("--dry-run", *options)), 0)
+                previews.append(json.loads(out.getvalue()))
+        for preview in previews:
+            self.assertEqual(preview["prompt_routing"], "native")
+            self.assertEqual(preview["workflow"], "supercodex_skills")
+            self.assertEqual(preview["mode"], "native_advisory")
+            self.assertFalse(preview["harness_enforced"])
+        self.assertEqual(previews[0]["bundled_skills"], previews[1]["bundled_skills"])
+        self.assertFalse(self.output.exists())
+        launch.assert_not_called()
+        hook.assert_not_called()
+
+    def test_explicit_managed_dry_run_selects_controller_without_launching(self):
+        with patch.dict(os.environ, {"XDG_CONFIG_HOME": str(self.root / "empty-config")}), \
+                patch("codex_harness.session.subprocess.call") as launch, \
+                patch("codex_harness.controller.CodexAdapter") as adapter, \
+                contextlib.redirect_stdout(io.StringIO()) as output:
+            self.assertEqual(handle(self.args("--managed", "--dry-run")), 0)
+        preview = json.loads(output.getvalue())
+        self.assertEqual(preview["mode"], "managed")
+        self.assertTrue(preview["harness_enforced"])
+        self.assertFalse(preview["inherits_codex_configuration"])
+        self.assertEqual(preview["transport"], "app-server")
+        self.assertNotIn("command", preview)
+        launch.assert_not_called()
+        adapter.assert_not_called()
+        self.assertFalse(self.output.exists())
+
+    def test_compatibility_options_select_managed_controller(self):
+        task = self.root / "task.json"
+        task.write_text(json.dumps({"id": "fixture", "prompt": "Verify fixture",
+                                    "checks": [["python", "-c", "print('verified')"]]}))
+        for options in (("--task", str(task)), ("--patch-only",), ("--no-stream",)):
+            with self.subTest(options=options), \
+                    patch.dict(os.environ, {"XDG_CONFIG_HOME": str(self.root / "empty-config")}), \
+                    contextlib.redirect_stdout(io.StringIO()) as output:
+                self.assertEqual(handle(self.args("--dry-run", *options)), 0)
+                preview = json.loads(output.getvalue())
+                self.assertEqual(preview["mode"], "managed")
+                self.assertTrue(preview["harness_enforced"])
+                if "--no-stream" in options:
+                    self.assertEqual(preview["transport"], "exec")
+        self.assertFalse(self.output.exists())
+
+    def test_native_and_managed_modes_cannot_be_combined(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            self.args("--native", "--managed")
+        for options in (("--task", "unused-task.json"), ("--patch-only",), ("--no-stream",)):
+            with self.subTest(options=options), self.assertRaises(ValueError):
+                handle(self.args("--native", "--dry-run", *options))
+        self.assertFalse(self.output.exists())
+
+    def test_research_only_options_require_managed_mode(self):
+        for options in (("--research-mcp", "github"),
+                        ("--research-mcp-config", str(self.root / "not-read.json"))):
+            with self.subTest(options=options), self.assertRaisesRegex(ValueError, "--managed"):
+                handle(self.args("--dry-run", *options))
+        self.assertFalse(self.output.exists())
+
+    def test_bootstrap_exposes_every_bundled_skill_for_native_use(self):
+        from codex_harness.agent_tools import bundled_skills
+
+        catalog = bundled_skills()
+        for message in ("ai news", "Find example repositories", "Fix a fixture bug"):
+            with self.subTest(message=message):
+                plan = prepare(self.args(message))
+                self.assertEqual(plan["skills"], catalog)
+                self.assertEqual(plan["preview"]["bundled_skills"], [row["name"] for row in catalog])
+                self.assertEqual(plan["preview"]["prompt_routing"], "native")
+                for row in catalog:
+                    self.assertIn(row["name"], plan["prompt"])
+                    self.assertIn(row["path"], plan["prompt"])
+                self.assertIn(message, plan["prompt"])
+                self.assertNotIn("Required answer command", plan["prompt"])
+                self.assertNotIn("Required coding command", plan["prompt"])
+                self.assertNotIn("Every user request must go through", plan["initial_prompt"])
+        self.assertFalse(self.output.exists())
+
+    def test_default_native_launch_needs_no_hook_or_child_model_preflight(self):
+        message = '  ai news about "small models"\r\nKeep """quotes""" and literal $(touch unwanted).\n'
+        with patch("codex_harness.session.sys.stdin.isatty", return_value=True), \
+                patch("codex_harness.session.sys.stdout.isatty", return_value=True), \
+                patch("codex_harness.session.shutil.which", return_value="/usr/bin/codex"), \
+                patch("codex_harness.prompt_hook.hook_overrides", side_effect=PermissionError("Operation not permitted")) as hook, \
+                patch("codex_harness.codex.CodexAdapter", side_effect=AssertionError("Unexpected managed child")) as adapter, \
+                patch("codex_harness.session.subprocess.call", return_value=0) as launch, \
+                contextlib.redirect_stderr(io.StringIO()):
+            self.assertEqual(handle(self.args(message, "--mcp", "github")), 0)
+        hook.assert_not_called()
+        adapter.assert_not_called()
+        launch.assert_called_once()
+        sessions = list((self.output / "sessions").iterdir())
+        self.assertEqual(len(sessions), 1)
+        folder = sessions[0]
+        command = launch.call_args.args[0]
+        overrides = [command[index + 1] for index, value in enumerate(command[:-1]) if value == "-c"]
+        self.assertFalse(any(value.startswith("hooks.") for value in overrides))
+        self.assertNotIn("app-server", command)
+        self.assertNotIn("exec", command)
+        self.assertNotIn("--dangerously-bypass-hook-trust", command)
+        self.assertEqual(command[-2], "--")
+        self.assertNotIn(message, command)
+        self.assertEqual(launch.call_args.kwargs["cwd"], self.repo)
+        self.assertIn(message.encode("utf-8"), (folder / "bootstrap.txt").read_bytes())
+        if (folder / "initial-request.txt").exists():
+            self.assertEqual((folder / "initial-request.txt").read_bytes(), message.encode("utf-8"))
+            self.assertEqual(stat.S_IMODE((folder / "initial-request.txt").stat().st_mode), 0o600)
+        for name in ("session-routing.json", "hook-registration.json", "messages", "answers", "runs"):
+            self.assertFalse((folder / name).exists(), f"Unexpected automatic routing artifact: {name}")
+        metadata = json.loads((folder / "session.json").read_text())
+        self.assertEqual(metadata["prompt_routing"], "native")
+        self.assertTrue(metadata["bundled_skills"])
+        self.assertEqual((self.repo / "existing.txt").read_text(), "Keep this checkout unchanged.\n")
+        self.assertFalse((self.root / "unwanted").exists())
+
+    def test_non_git_home_can_use_its_private_state_directory(self):
+        output = self.repo / ".local/state/super-codex"
+        self.assertEqual(session_output_directory(self.repo, output), output)
+        self.assertFalse(output.exists())
+        with self.assertRaises(ValueError):
+            session_output_directory(self.repo, self.repo / ".git/artifacts")
+        subprocess.run(["git", "init", "-q", str(self.repo)], check=True)
+        with self.assertRaisesRegex(ValueError, "not safely ignored"):
+            session_output_directory(self.repo, output)
 
     def test_nonterminal_and_missing_executable_fail_before_writing(self):
         with patch("codex_harness.session.sys.stdin.isatty", return_value=False):
@@ -157,7 +293,7 @@ sys.exit(7)
         launch = Path(__file__).resolve().parents[1] / "codex_harness/launch.py"
         unwanted = self.root / "shell-expanded"
         task = f'Inspect the literal $(touch "{unwanted}"); do not evaluate it.'
-        command = [sys.executable, str(launch), "--native", task, "--repo", str(self.repo), "--config", str(config),
+        command = [sys.executable, str(launch), task, "--repo", str(self.repo), "--config", str(config),
                    "--output-root", str(self.output), "--operator-model", "test-operator"]
         env = {**os.environ, "SUPERCODEX_TEST_NATIVE": "native-config-marker"}
         env.pop("SUPERCODEX_WORKER", None)
@@ -203,6 +339,14 @@ sys.exit(7)
         self.assertEqual(capture["received"], "terminal-input-check")
         self.assertEqual(capture["worker_model"], "test-worker")
         self.assertTrue(capture["mcp_exists"])
+        overrides = [capture["argv"][index + 1] for index, value in enumerate(capture["argv"][:-1]) if value == "-c"]
+        self.assertFalse(any(value.startswith("hooks.") for value in overrides))
+        self.assertFalse((folder / "session-routing.json").exists())
+        self.assertFalse((folder / "hook-registration.json").exists())
+        metadata = json.loads((folder / "session.json").read_text())
+        self.assertEqual(metadata["workflow"], "supercodex_skills")
+        for name in metadata["bundled_skills"]:
+            self.assertIn(name, capture["bootstrap"])
         self.assertIn(task, capture["bootstrap"])
         self.assertIn(str(folder / "bootstrap.txt"), capture["argv"][-1])
         self.assertNotIn(task, capture["argv"][-1])
