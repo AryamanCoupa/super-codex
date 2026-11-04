@@ -1,0 +1,145 @@
+tests/test_experimental_gepa.py
+  s_69cf76441c36e1::t_ffa789a80bfee3 1-91,93-102,122-164
+  s_69cf76441c36e1::t_2b346ba147cd55 92,103-121
+docs/RESEARCH.md
+  s_69cf76441c36e1::t_0993b5b746a602 5,25,34,59
+pyproject.toml
+  s_69cf76441c36e1::t_667f9b84c38397 7,14-16
+  s_69cf76441c36e1::t_93d6a93d42d2b2 17
+docs/RESEARCH_COVERAGE.md
+  s_69cf76441c36e1::t_a4cc5190424b48 1-84
+tests/test_experimental_routing.py
+  s_69cf76441c36e1::t_b27caa4c8bb22e 57-58,87-88
+  s_69cf76441c36e1::t_7212598d167d89 1-56,59-60,62-70,72-86,89-137
+  s_69cf76441c36e1::t_b45ccb15e17d06 71
+  s_69cf76441c36e1::t_f2bb1635f32c7e 61
+codex_harness/improve.py
+  s_69cf76441c36e1::t_8a8cc1dc335123 22-36,70-72,93-99,182,224-231
+  s_69cf76441c36e1::t_093217bb0a5107 217-218
+codex_harness/assets/skills/curate-learning-data/SKILL.md
+  s_69cf76441c36e1::t_459ec8ee590a2f 1-12
+tests/test_experimental_cli.py
+  s_69cf76441c36e1::t_342e8dfcb69876 8,14-15,77-120
+  s_69cf76441c36e1::t_b167496b5d7904 1-7,9-13,16-76,121-124
+CONTRIBUTING.md
+  s_69cf76441c36e1::t_b023b88a4bf88b 13-21
+docs/ARCHITECTURE.md
+  s_69cf76441c36e1::t_1711ac5b5a5a45 3,21-26,29
+docs/RESEARCH_UPDATE.md
+  s_69cf76441c36e1::t_0993b5b746a602 5-6,11-13,15,17,51
+tests/test_experimental_parallel.py
+  s_69cf76441c36e1::t_4ac9a490f47cac 11,204-216
+  s_69cf76441c36e1::t_dd4aac197add4c 1-7,9-10,12-147,162-203,217-222
+  s_69cf76441c36e1::t_75e0a682d43cd8 8,148-161
+codex_harness/experimental/routing.py
+  s_69cf76441c36e1::t_4573ececbf0c15 76,79-80,98-99,182-187,211-212
+  s_69cf76441c36e1::t_b27caa4c8bb22e 176-177,240-243
+  s_69cf76441c36e1::t_eae782a7b7255b 1-19,36-75,77-78,81-92,94-97,100-175,178-181,188-210,213-216,224-227,229-239,246-253
+  s_69cf76441c36e1::t_d72641f3093a3f 20-35,93,217-223,228,244-245
+codex_harness/optimize.py
+  s_69cf76441c36e1::t_8a8cc1dc335123 17,111-113
+codex_harness/experimental/ace.py
+  s_69cf76441c36e1::t_7bd0cf3bc74c8f 277-278,280-281,283,323,325
+  s_69cf76441c36e1::t_bb854d00aceb3c 104-110,262
+  s_69cf76441c36e1::t_2b346ba147cd55 266-267
+  s_69cf76441c36e1::t_ba35bd9190a995 1-47,52-103,111-114,123-137,139-141,147-161,166-174,176-182,188-251,257-261,263-265,268-271,285-312,314-322,326-340
+  s_69cf76441c36e1::t_c0414bc94974ba 48-51,115-116,175,183-187,252-256
+  s_69cf76441c36e1::t_23636fb2708c41 117-122,138,142-146,162-165,272-276,279,282,284,313,324
+docs/EXPERIMENTAL_OPTIMIZERS.md
+  s_69cf76441c36e1::t_7bd0cf3bc74c8f 17,19-27,30-33,86-96
+  s_69cf76441c36e1::t_62bfc58e25099f 1-16,18,34-59,62-85,97-114,116-127
+  s_69cf76441c36e1::t_23636fb2708c41 28-29
+  s_69cf76441c36e1::t_4f8e4c6c7354c5 60-61,115
+codex_harness/experimental/parallel.py
+  s_69cf76441c36e1::t_c45df25bdf7dd1 184-189,206,260,283,309,406
+  s_69cf76441c36e1::t_b7a7abf85ec558 1-122,125,133,140-143,146-153,159-183,190-205,207-229,232,234-259,261-276,279-282,284-308,310-342,345,347-405,407-408
+  s_69cf76441c36e1::t_dd4aac197add4c 134-135,139,277-278
+  s_69cf76441c36e1::t_75e0a682d43cd8 123-124,126-132,136-138,144-145,154-158,230-231,233,343-344,346
+tests/test_improve.py
+  s_69cf76441c36e1::t_3ee401301049ff 10,70-81
+  s_69cf76441c36e1::t_0c63339e378e13 82
+README.md
+  s_69cf76441c36e1::t_1711ac5b5a5a45 18-19,106-115,130,144,184
+tests/test_experimental_finetune.py
+  s_69cf76441c36e1::t_7f28ad729eea37 172-177,179-183,213-225
+  s_69cf76441c36e1::t_ab71ce8e11b646 1-108,110-163,165-171,184-212,227-264
+  s_69cf76441c36e1::t_23a8b69bee02eb 109,164,178,226
+docs/VALIDATION.md
+  s_69cf76441c36e1::t_4551c6adf30a00 3,19-23,27-29,33,70-74,78
+codex_harness/runner.py
+  s_69cf76441c36e1::t_093217bb0a5107 160-163,170-173,187
+codex_harness/experimental/memory.py
+  s_69cf76441c36e1::t_4573ececbf0c15 55-58,65,70,73-74,85-87,120-121,129,135-136,138-139,146,151
+  s_69cf76441c36e1::t_eae782a7b7255b 1-54,59-64,66-69,71-72,75-84,88-119,122-128,130-134,137,140-145,147-150,152-197
+codex_harness/experimental/cli.py
+  s_69cf76441c36e1::t_ebe9353b6a95f6 1-159,164-189,192-199,201-204,210,234-264,266-271,273-297,302-303
+  s_69cf76441c36e1::t_a0c3f46086a6de 208-209
+  s_69cf76441c36e1::t_8a8cc1dc335123 205-207
+  s_69cf76441c36e1::t_b167496b5d7904 160-163,190-191,298-301
+  s_69cf76441c36e1::t_4b5d489eae89e8 200,265,272
+  s_69cf76441c36e1::t_342e8dfcb69876 211-233
+codex_harness/cli.py
+  s_69cf76441c36e1::t_ebe9353b6a95f6 129-130,133-135
+tests/test_learning_provenance.py
+  s_69cf76441c36e1::t_3ee401301049ff 1-42
+codex_harness/experimental/finetune.py
+  s_69cf76441c36e1::t_8708ad36ea7698 20,57,200-201
+  s_69cf76441c36e1::t_4b5d489eae89e8 43,126-127,131,181,194-197
+  s_69cf76441c36e1::t_8494704cf779da 1-19,21-42,44-56,58-125,128-130,132-180,182-193,198-199,202-269
+docs/EXPERIMENTS.md
+  s_69cf76441c36e1::t_459ec8ee590a2f 1-128
+tests/test_experimental_memory.py
+  s_69cf76441c36e1::t_7212598d167d89 1-6,8-60,71-112
+  s_69cf76441c36e1::t_7f28ad729eea37 7,62-70
+  s_69cf76441c36e1::t_b45ccb15e17d06 61
+docs/EVALUATION.md
+  s_69cf76441c36e1::t_1711ac5b5a5a45 32,73-74
+codex_harness/experimental/gepa.py
+  s_69cf76441c36e1::t_4ba97a636d5c56 137-138
+  s_69cf76441c36e1::t_bb854d00aceb3c 18,161-165,167,174
+  s_69cf76441c36e1::t_23636fb2708c41 85-88,94,211
+  s_69cf76441c36e1::t_6b241ef7af185d 1-17,19-82,89-93,96-136,139-160,166,168-173,175-209,213-228
+  s_69cf76441c36e1::t_7bd0cf3bc74c8f 83-84,95,210,212
+codex_harness/experimental/recursive.py
+  s_69cf76441c36e1::t_4b5d489eae89e8 17,46-49,64,72-73,247-249
+  s_69cf76441c36e1::t_e693de75fef31c 1-16,18-45,50-63,65-71,74-229,231-246,250-265
+  s_69cf76441c36e1::t_667f9b84c38397 230
+.github/workflows/ci.yml
+  s_69cf76441c36e1::t_b023b88a4bf88b 20-28
+tests/test_optimize.py
+  s_69cf76441c36e1::t_0836c2cb739b3c 59
+codex_harness/__init__.py
+  s_69cf76441c36e1::t_667f9b84c38397 3
+codex_harness/assets/skills/select-experiment/SKILL.md
+  s_69cf76441c36e1::t_459ec8ee590a2f 1-12
+docs/EXPERIMENTAL_ROUTING.md
+  s_69cf76441c36e1::t_d72641f3093a3f 1-54
+tests/test_experimental_ace.py
+  s_69cf76441c36e1::t_c0414bc94974ba 152-153
+  s_69cf76441c36e1::t_ffa789a80bfee3 1-10,12-58,61-66,115-151,154-178
+  s_69cf76441c36e1::t_2b346ba147cd55 11,59-60,67-114
+tests/test_experimental_recursive.py
+  s_69cf76441c36e1::t_667f9b84c38397 1-5,7-8,10-84,127-141
+  s_69cf76441c36e1::t_8df322bcbe9d91 6,9,85-126
+codex_harness/experimental/__init__.py
+  s_69cf76441c36e1::t_093217bb0a5107 1
+docs/EXPERIMENTAL_PARALLEL.md
+  s_69cf76441c36e1::t_c45df25bdf7dd1 9-16,60-68
+  s_69cf76441c36e1::t_4ac9a490f47cac 1-8,17-59,69-87
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.7.5",
+  "base_commit_sha": "e376b252f94fb8ae9f6dd72ae0de2fab0faf75cc",
+  "prompts": {},
+  "sessions": {
+    "s_69cf76441c36e1": {
+      "agent_id": {
+        "tool": "codex",
+        "id": "01a1a7a5-eeb9-7aa3-93e8-c94ba558a12b",
+        "model": "gpt-6-astra"
+      },
+      "human_author": "Aryaman-QA <aryaman.gurjar@coupa.com>"
+    }
+  }
+}
