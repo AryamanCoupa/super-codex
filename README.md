@@ -8,7 +8,7 @@ Run **`sc`** or **`supercodex`** to open native Codex with SuperCodex's operator
 
 The default skills hook makes no model calls, saves no per-turn prompt copies and requires no managed receipt. It reminds Codex to use the relevant procedure, such as evidence-based debugging or useful multi-agent work; skill selection and execution remain model-guided. Use **`sc --prompt-hook answer`** for exact-prompt managed routing, **`sc --prompt-hook off`** for bootstrap guidance only, or **`sc --managed`**, `answer` and `run` for explicit managed workflows.
 
-This describes the **unreleased 0.5.6 development build**. The release links below still install 0.5.0, whose default is the managed controller. Install this checkout with `pipx install --force .` to test 0.5.6, then restart `sc`. Skills and reminders guide the model; they do not guarantee accuracy or replace execution evidence.
+This guide describes **SuperCodex 0.5.6**. Install its versioned wheel below, then restart `sc` after upgrading. Skills and reminders guide the model; they do not guarantee accuracy or replace execution evidence.
 
 Independent community project. Not affiliated with or endorsed by OpenAI. “Super” describes the goal; improved accuracy and lower cost must be demonstrated on your tasks.
 
@@ -50,7 +50,7 @@ flowchart LR
 Install a published version without cloning (requires Python 3.11+, Git, Codex and pipx). Versioned packages are distributed through [GitHub Releases](https://github.com/AryamanCoupa/super-codex/releases):
 
 ```bash
-pipx install "https://github.com/AryamanCoupa/super-codex/releases/download/v0.5.0/super_codex_harness-0.5.0-py3-none-any.whl"
+pipx install "https://github.com/AryamanCoupa/super-codex/releases/download/v0.5.6/super_codex_harness-0.5.6-py3-none-any.whl"
 pipx ensurepath
 
 # Reopen your terminal after updating PATH.
@@ -60,7 +60,7 @@ sc
 supercodex "Fix the pagination bug and verify the edge cases"
 ```
 
-The [setup guide](docs/INSTALLATION.md) covers prerequisites, release and source-archive installation, local development builds, upgrades and troubleshooting. The [maintainer guide](docs/RELEASING.md) explains publishing new versions. The package is not published to PyPI. The following mode selectors describe 0.5.6; install the local checkout to try them.
+The [setup guide](docs/INSTALLATION.md) covers prerequisites, release and source-archive installation, local development builds, upgrades and troubleshooting. The [maintainer guide](docs/RELEASING.md) explains publishing new versions. The package is not published to PyPI. For an existing installation, use the wheel URL with `pipx install --force`, then restart `sc`. The following mode selectors are available in 0.5.6.
 
 ```bash
 sc --repo /path/to/project --config architect

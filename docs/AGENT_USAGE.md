@@ -1,8 +1,8 @@
 # Use SuperCodex skills from any project
 
-In the unreleased **0.5.6 development build**, `sc` / `supercodex` opens native Codex with SuperCodex's operator skill, twelve task skills and any selected task pack. A lightweight UserPromptSubmit hook suggests up to three bundled skills from the message's keywords and tells the current model to read and apply relevant instructions. Research uses native web/MCP connections; coding can inspect, edit and check changes directly. This default hook starts no model, saves no per-turn prompt copies and requires no managed receipt.
+In **SuperCodex 0.5.6**, `sc` / `supercodex` opens native Codex with SuperCodex's operator skill, twelve task skills and any selected task pack. A lightweight UserPromptSubmit hook suggests up to three bundled skills from the message's keywords and tells the current model to read and apply relevant instructions. Research uses native web/MCP connections; coding can inspect, edit and check changes directly. This default hook starts no model, saves no per-turn prompt copies and requires no managed receipt.
 
-Skills guide behavior rather than enforcing it. They call for scoped work, current sources, meaningful verification and honest reporting. Explicit `answer`, `--managed`, `run`, evaluation and pack commands remain available when their additional orchestration is useful. Published 0.5.0 starts the managed controller by default and does not have the later mode selectors; install the local checkout to try 0.5.6.
+Skills guide behavior rather than enforcing it. They call for scoped work, current sources, meaningful verification and honest reporting. Explicit `answer`, `--managed`, `run`, evaluation and pack commands remain available when their additional orchestration is useful. Follow the [installation guide](INSTALLATION.md) to install or upgrade to 0.5.6 without cloning the repository.
 
 ## Run with sc
 

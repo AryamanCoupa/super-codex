@@ -4,7 +4,7 @@ Install a published release directly with pipx, then run `sc` from any project. 
 
 Packages are distributed through [AryamanCoupa/super-codex Releases](https://github.com/AryamanCoupa/super-codex/releases). Use a version with completed release assets. The package is not published to PyPI; do not use `pipx install super-codex-harness` yet. Maintainers can follow [the release guide](RELEASING.md) to publish new versions.
 
-This checkout contains the **unreleased 0.5.6 development build**. Its native Codex interface loads the operator, bundled skills and a lightweight per-turn skill reminder. Test it with `pipx install --force .` from this checkout, or `pipx install --force /absolute/path/to/a/built.whl`. Published examples below intentionally select 0.5.0; do not use a 0.5.6 download URL until its assets exist. Version 0.5.0 starts the managed controller by default and lacks the later mode selectors.
+These instructions target **SuperCodex 0.5.6**. Its native Codex interface loads the operator, bundled skills and a lightweight per-turn skill reminder. The versioned wheel below installs without a source checkout. For local development, use `pipx install --force .` from a checkout or `pipx install --force /absolute/path/to/a/built.whl`.
 
 ## Prerequisites
 
@@ -23,10 +23,10 @@ On Linux, use your distribution's pipx package or another method in the [officia
 
 ## Install a released version
 
-Install the published `v0.5.0` release wheel:
+Install the `v0.5.6` release wheel:
 
 ```bash
-pipx install "https://github.com/AryamanCoupa/super-codex/releases/download/v0.5.0/super_codex_harness-0.5.0-py3-none-any.whl"
+pipx install "https://github.com/AryamanCoupa/super-codex/releases/download/v0.5.6/super_codex_harness-0.5.6-py3-none-any.whl"
 pipx ensurepath
 ```
 
@@ -52,7 +52,7 @@ sc
 supercodex "Fix the pagination bug and verify the edge cases"
 ```
 
-In the 0.5.6 development build, `sc` opens the real Codex terminal with normal layout, streaming and authentication. A private bootstrap supplies the operator, selected pack/policy defaults and skill catalog. The default `skills` hook suggests up to three keyword-matched skills per message and tells Codex to read and apply relevant instructions in the current session. Research uses existing web/MCP tools; coding edits and runs checks directly. The hook makes no model calls, saves no per-turn prompt copies and requires no managed receipt. Reading guidance alone does not establish task completion.
+In 0.5.6, `sc` opens the real Codex terminal with normal layout, streaming and authentication. A private bootstrap supplies the operator, selected pack/policy defaults and skill catalog. The default `skills` hook suggests up to three keyword-matched skills per message and tells Codex to read and apply relevant instructions in the current session. Research uses existing web/MCP tools; coding edits and runs checks directly. The hook makes no model calls, saves no per-turn prompt copies and requires no managed receipt. Reading guidance alone does not establish task completion.
 
 Use `sc skills` to list the twelve bundled task skills, `sc skills --search "GitHub repositories"` to search their names/descriptions, `sc skills github-context` to read one skill, or `sc skills --json` for catalog metadata. Search also accepts `--json`. These inspection commands make no model calls. The search covers bundled metadata only, so no match does not mean a relevant native or project skill is unavailable. See [skill selection and coverage](AGENT_USAGE.md#bundled-skill-coverage).
 
@@ -65,7 +65,7 @@ sc --prompt-hook answer             # opt in to exact-prompt managed routing
 sc --prompt-hook off                # bootstrap guidance without per-turn reminders
 sc --no-prompt-hook                 # alias for --prompt-hook off
 
-# Optional managed workflows in the 0.5.6 development build:
+# Optional managed workflows in 0.5.6:
 sc answer "Research this question"
 sc answer --prompt-file /path/to/message.txt --context-file /path/to/relevant-context.txt
 sc answer "Fix the pagination bug and verify its contract" --pack backend
@@ -80,12 +80,12 @@ Native research can use the connections already available in Codex, without a cl
 
 `--native` remains an alias for the default 0.5.6 interface. On `start`, `--task`, `--patch-only` and `--no-stream` select managed mode for compatibility and conflict with explicit `--native`. Research flags belong to `--prompt-hook answer`, `answer` or `start --managed`; skills/off modes use native Codex connections or `--mcp`. A quoted task in native mode opens an interactive session; use `sc answer "PROMPT"` for a noninteractive request.
 
-## Install from a published tag before a wheel is available
+## Install from a versioned source archive
 
 A GitHub source archive is another no-clone option:
 
 ```bash
-pipx install "https://github.com/AryamanCoupa/super-codex/archive/refs/tags/v0.5.0.zip"
+pipx install "https://github.com/AryamanCoupa/super-codex/archive/refs/tags/v0.5.6.zip"
 ```
 
 The tag must exist and contain this Python package. pipx downloads the archive and builds it in its own environment; build dependencies may be downloaded. A tagged wheel is preferable when the release already provides one. Use a versioned tag rather than a moving branch for repeatable installation.
@@ -95,7 +95,7 @@ The tag must exist and contain this Python package. pipx downloads the archive a
 Use the URL of the desired published release with `--force`. Replace both version components below when choosing another release:
 
 ```bash
-pipx install --force "https://github.com/AryamanCoupa/super-codex/releases/download/v0.5.0/super_codex_harness-0.5.0-py3-none-any.whl"
+pipx install --force "https://github.com/AryamanCoupa/super-codex/releases/download/v0.5.6/super_codex_harness-0.5.6-py3-none-any.whl"
 sc --version
 ```
 
@@ -131,7 +131,7 @@ pipx inject super-codex-harness "gepa==0.1.4"
 pipx inject super-codex-harness "trl==1.17.1" "peft==0.21.0"
 ```
 
-Dependency versions above match the 0.5.6 development build. Follow the target release's instructions when upgrading. [pipx CLI reference](https://pipx.pypa.io/stable/reference/cli.html), [experiment guide and training limitations](EXPERIMENTS.md).
+Dependency versions above match release 0.5.6. Follow the target release's instructions when upgrading. [pipx CLI reference](https://pipx.pypa.io/stable/reference/cli.html), [experiment guide and training limitations](EXPERIMENTS.md).
 
 Playwright, GitHub, Atlassian and custom MCP services have their own runtime/authentication requirements. Configure only the services needed for your task using [the integrations guide](INTEGRATIONS.md); installing the CLI does not connect those accounts automatically.
 
@@ -145,7 +145,7 @@ If an explicitly selected answer/managed request reports `Operation not permitte
 
 If an explicitly selected managed coding task reports a dirty source, inspect `git status` and commit only your intended changes or choose a clean checkout. If preparation cannot identify meaningful checks, supply a reviewed task JSON or dedicated pack. Inspect the receipt for the exact reason. Native skill-driven coding can work in an existing checkout while preserving unrelated edits; it does not require changing user work to satisfy managed-run prerequisites.
 
-The local development build includes the 0.5.1 fix for managed research from directories without Git commits. If an older running session reports `fatal: Needed a single revision` for a research question, install this checkout and restart it; the published 0.5.0 wheel does not include that fix. Managed coding still needs `--repo /path/to/a/clean-committed-project`. A missing research connection is a separate setup issue; configure it using [the integrations guide](INTEGRATIONS.md#research-from-any-directory).
+Release 0.5.6 includes the 0.5.1 fix for managed research from directories without Git commits. If an older running session reports `fatal: Needed a single revision` for a research question, upgrade with the release URL above and restart it; version 0.5.0 lacks that fix. Managed coding still needs `--repo /path/to/a/clean-committed-project`. A missing research connection is a separate setup issue; configure it using [the integrations guide](INTEGRATIONS.md#research-from-any-directory).
 
 Remove the application with:
 
