@@ -1,0 +1,6 @@
+# Strong-model planning, smaller-model execution, stronger fallback.
+planner_model = "gpt-6.1-sol"
+model = "gpt-6-luna"
+escalation_model = "gpt-6.1-sol"
+cheap_attempts = 2
+max_attempts = 3

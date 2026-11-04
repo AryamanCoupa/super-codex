@@ -1,0 +1,5 @@
+# Experimental adapter seam; choose a model installed in your local provider.
+# This is not a validated quality preset. Full open-model support is a later milestone.
+model = "YOUR-INSTALLED-MODEL"
+local_provider = "ollama"
+max_attempts = 2

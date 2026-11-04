@@ -1,0 +1,9 @@
+# Optional integration. Replace the endpoint with your own MCP deployment.
+# Multiplexed tools expose read and write operations under the same tool name:
+# this allow-list is NOT a read-only security boundary. Use server-side credentials/policy.
+[mcp_servers.custom]
+url = "https://YOUR-MCP-HOST/mcp"
+bearer_token_env_var = "CUSTOM_MCP_TOKEN"
+enabled_tools = ["search", "fetch"]
+default_tools_approval_mode = "prompt"
+required = true

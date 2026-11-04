@@ -1,0 +1,5 @@
+name = "issue-to-patch"
+version = "1"
+skills = ["github-context", "atlassian-context", "debug-with-evidence"]
+[task]
+protected_paths = ["tests", "e2e"]

@@ -1,0 +1,1 @@
+Use the supplied issue URL as the requirement source. Retrieve only the issue and linked context necessary to implement acceptance criteria. Keep source links in the final handoff. Add a local check command to the task manifest. Enable the relevant MCP preset explicitly, so unused services do not consume context or cause startup failures.

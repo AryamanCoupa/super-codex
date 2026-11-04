@@ -1,0 +1,19 @@
+# Verified against Codex CLI 0.164.0 on 2026-11-04. Choose models available to your account.
+model = "gpt-6-luna"
+reasoning_effort = "high"
+codex_command = ["codex"]
+max_attempts = 3
+cheap_attempts = 2
+# Set escalation_model explicitly to enable paid escalation.
+attempt_timeout_seconds = 300
+run_timeout_seconds = 1200
+check_timeout_seconds = 120
+max_tokens = 120000
+feedback_chars = 6000
+inherit_user_config = false
+# Dollar budgets are optional and require your own current prices.
+# max_cost_usd = 2.0
+# [prices."YOUR_MODEL"]
+# input = ...          # USD per million uncached input tokens
+# cached_input = ...
+# output = ...

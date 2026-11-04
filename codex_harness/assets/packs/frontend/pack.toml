@@ -1,0 +1,6 @@
+name = "frontend"
+version = "1"
+skills = ["browser-verify", "debug-with-evidence"]
+[task]
+checks = [["npm", "test", "--", "--run"], ["npm", "run", "build"]]
+protected_paths = ["tests", "e2e", "package.json", "package-lock.json", "playwright.config.*"]

@@ -1,0 +1,4 @@
+# Small model with one evidence-guided repair; no extra model roles.
+model = "gpt-6-luna"
+max_attempts = 2
+cheap_attempts = 2

@@ -1,0 +1,1 @@
+For Python backend tasks, inspect the caller's input/output contract and error behavior. Verify empty input, boundary values, and backward compatibility where relevant. Use the project's existing dependency and test workflow. Preserve test and dependency configuration unless the task explicitly calls for changing it and the task manifest permits it.

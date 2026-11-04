@@ -1,0 +1,72 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    env:
+      RELEASE_TAG: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Verify stable tag and both package versions
+        run: python scripts/check_release.py --tag "$RELEASE_TAG"
+      - name: Install build tools and optional optimizer contract dependency
+        run: python -m pip install build twine '.[gepa]'
+      - name: Run offline checks
+        run: python -m unittest discover -s tests -v
+      - name: Build wheel and source distribution
+        run: python -m build
+      - name: Check distribution metadata
+        run: python -m twine check --strict dist/*.whl dist/*.tar.gz
+      - name: Install and exercise the wheel outside the checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          python -m venv "$RUNNER_TEMP/supercodex-release"
+          "$RUNNER_TEMP/supercodex-release/bin/python" -m pip install --no-index --no-deps dist/*.whl
+          mkdir "$RUNNER_TEMP/supercodex-release-project"
+          cd "$RUNNER_TEMP"
+          "$RUNNER_TEMP/supercodex-release/bin/sc" --version
+          "$RUNNER_TEMP/supercodex-release/bin/supercodex" --version
+          "$RUNNER_TEMP/supercodex-release/bin/sc" --dry-run --repo "$RUNNER_TEMP/supercodex-release-project"
+          "$RUNNER_TEMP/supercodex-release/bin/sc" demo --output "$RUNNER_TEMP/supercodex-release-demo"
+      - name: Create downloadable checksums
+        working-directory: dist
+        run: sha256sum *.whl *.tar.gz > SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-distributions
+          path: dist/*
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-distributions
+          path: dist
+      - name: Publish tagged GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: |
+          gh release create "$RELEASE_TAG" dist/*.whl dist/*.tar.gz dist/SHA256SUMS \
+            --repo "$GH_REPO" --verify-tag --generate-notes --title "SuperCodex $RELEASE_TAG"

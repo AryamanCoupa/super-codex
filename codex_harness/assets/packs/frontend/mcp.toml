@@ -1,0 +1,5 @@
+[mcp_servers.playwright]
+command = "npx"
+args = ["-y", "@playwright/mcp@0.0.84", "--isolated", "--headless"]
+required = true
+startup_timeout_sec = 60

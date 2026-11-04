@@ -1,0 +1,10 @@
+# Higher cost is allowed to improve correctness on difficult tasks.
+# Independent review is an additional gate, never a replacement for tests.
+planner_model = "gpt-6.1-sol"
+model = "gpt-6-luna"
+escalation_model = "gpt-6.1-sol"
+reviewer_model = "gpt-6.1-sol"
+cheap_attempts = 1
+max_attempts = 3
+run_timeout_seconds = 2400
+max_tokens = 300000

@@ -1,0 +1,5 @@
+# Spend on a stronger implementer only after two failed attempts.
+model = "gpt-6-luna"
+max_attempts = 3
+cheap_attempts = 2
+escalation_model = "gpt-6.1-sol"

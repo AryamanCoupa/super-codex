@@ -1,0 +1,6 @@
+[mcp_servers.github]
+url = "https://api.githubcopilot.com/mcp/readonly"
+bearer_token_env_var = "GITHUB_MCP_TOKEN"
+enabled_tools = ["get_file_contents", "search_code", "issue_read", "pull_request_read", "search_issues", "search_pull_requests"]
+required = true
+startup_timeout_sec = 30

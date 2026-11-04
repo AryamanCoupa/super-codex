@@ -1,0 +1,5 @@
+[mcp_servers.atlassian]
+url = "https://mcp.atlassian.com/v2/mcp"
+enabled_tools = ["getAccessibleAtlassianResources", "searchJiraIssuesUsingJql", "getJiraIssue", "searchConfluenceUsingCql", "getConfluencePage"]
+required = true
+startup_timeout_sec = 30

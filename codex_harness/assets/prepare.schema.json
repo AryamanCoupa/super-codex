@@ -1,0 +1,80 @@
+{
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "kind",
+    "answer",
+    "apply_patch",
+    "task"
+  ],
+  "properties": {
+    "apply_patch": {
+      "type": "boolean"
+    },
+    "kind": {
+      "type": "string",
+      "enum": [
+        "task",
+        "answer",
+        "blocked"
+      ]
+    },
+    "answer": {
+      "type": "string"
+    },
+    "task": {
+      "anyOf": [
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "id",
+            "prompt",
+            "checks",
+            "setup",
+            "protected_paths",
+            "baseline_must_fail"
+          ],
+          "properties": {
+            "id": {
+              "type": "string"
+            },
+            "prompt": {
+              "type": "string"
+            },
+            "checks": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "setup": {
+              "type": "array",
+              "items": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "protected_paths": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "baseline_must_fail": {
+              "type": "boolean"
+            }
+          }
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  }
+}
